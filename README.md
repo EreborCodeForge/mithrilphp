@@ -49,7 +49,7 @@ Não importa a sua escolha de interface, o MithrilPHP entrega os dados e a estru
 
 Esqueça a complexidade de configurar ferramentas de linha de comando externas. O MithrilPHP vem equipado com o **Forge**, um CLI nativo projetado para eliminar dores de cabeça.
 
-![Forge CLI Preview](docs/images/forge_preview.png)
+![Forge CLI Preview](docs/images/image.png)
 
 O Forge oferece controle total sobre o banco de dados e o servidor de desenvolvimento:
 
