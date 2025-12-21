@@ -1,0 +1,15 @@
+vendor/
+/node_modules
+.env
+.env.backup
+.phpunit.result.cache
+/.idea
+/.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+/logs/*.log
+!/logs/.gitkeep
+*.sqlite
+*.sqlite-journal

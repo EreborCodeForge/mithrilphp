@@ -1,0 +1,29 @@
+{
+    "name": "phales/appmarket",
+    "description": "AppMarket Refactored",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-pdo": "*",
+        "ext-json": "*"
+    },
+    "authors": [
+        {
+            "name": "Phales",
+            "email": "thales.rup@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "scripts": {
+        "migrate": "php forge migrate",
+        "migrate:rollback": "php forge migrate:rollback",
+        "migrate:fresh": "php forge migrate:fresh",
+        "serve": "php forge serve"
+    }
+}

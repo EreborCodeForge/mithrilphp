@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Base (ajuste se seu app não estiver na raiz do domínio)
+    RewriteBase /
+
+    # 🔒 Não reescreve se o arquivo ou diretório EXISTIR
+    # (remova essas duas linhas se quiser FORÇAR TUDO para o index)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 🚀 Tudo o resto vai para index.php
+    RewriteRule ^ index.php [L]
+</IfModule>
