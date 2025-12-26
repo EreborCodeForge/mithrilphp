@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Core\Environment;
 
-$connection = Environment::get('DB_CONNECTION', 'mysql');
+$connection = Environment::get(key: 'DB_CONNECTION', default: 'mysql');
 
 if ($connection === 'sqlite') {
     return [

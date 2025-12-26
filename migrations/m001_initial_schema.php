@@ -24,36 +24,6 @@ return new class extends Migration
             created_at $timestamp,
             updated_at $updateTimestamp
         )");
-
-        // Categories
-        $this->db->exec("CREATE TABLE IF NOT EXISTS categories (
-            id $autoIncrement,
-            name VARCHAR(255) NOT NULL,
-            description TEXT
-        )");
-
-        // Products
-        $this->db->exec("CREATE TABLE IF NOT EXISTS products (
-            id $autoIncrement,
-            category_id INT,
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            price DECIMAL(10, 2) NOT NULL,
-            quantity INT DEFAULT 0,
-            barcode VARCHAR(255),
-            image_path VARCHAR(255),
-            expiration_date DATE,
-            created_at $timestamp,
-            updated_at $updateTimestamp,
-            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
-        )");
-
-        // Settings
-        $this->db->exec("CREATE TABLE IF NOT EXISTS settings (
-            id $autoIncrement,
-            key_name VARCHAR(255) UNIQUE NOT NULL,
-            value TEXT
-        )");
     }
 
     public function down(): void

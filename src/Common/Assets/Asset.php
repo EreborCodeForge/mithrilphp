@@ -15,8 +15,7 @@ final class Asset
 
     public static function urlFromResource(string $publicPath): string
     {
-        $fsPath = self::dirToFs($publicPath, 'resources');
-        return $fsPath;
+        return self::dirToFs($publicPath, 'resources');
     }
 
     private static function dirToFs(string $publicPath, string $dirName): string

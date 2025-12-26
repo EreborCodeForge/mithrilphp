@@ -26,7 +26,6 @@ use App\Infrastructure\Repositories\PDOProductRepository;
 use App\Infrastructure\Repositories\PDOUserRepository;
 use App\Infrastructure\Services\LocalStorageService;
 use App\Presentation\Controllers\AuthController;
-use App\Presentation\Controllers\ProductController;
 use App\Presentation\Controllers\UserController;
 use App\Presentation\Middleware\AuthMiddleware;
 
@@ -88,13 +87,6 @@ try {
 
     // Health Check
     $router->get('/api/health', [App\Presentation\Controllers\HealthCheckController::class, 'check']);
-
-    // Product Routes
-    $router->get('/api/products', [ProductController::class, 'index']);
-    $router->post('/api/products', [ProductController::class, 'store'], [AuthMiddleware::class]);
-    $router->get('/api/products/{id}', [ProductController::class, 'show']);
-    $router->put('/api/products/{id}', [ProductController::class, 'update'], [AuthMiddleware::class]);
-    $router->delete('/api/products/{id}', [ProductController::class, 'delete'], [AuthMiddleware::class]);
 
     // User Routes
     $router->get('/api/users', [UserController::class, 'index'], [AuthMiddleware::class]);
