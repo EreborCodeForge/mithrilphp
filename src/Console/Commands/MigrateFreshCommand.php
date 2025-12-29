@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace Erebor\Mithril\Console\Commands;
 
 class MigrateFreshCommand extends BaseMigrateCommand
 {

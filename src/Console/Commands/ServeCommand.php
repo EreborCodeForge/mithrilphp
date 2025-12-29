@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace Erebor\Mithril\Console\Commands;
 
-use App\Core\Console\Command;
-use App\Core\Environment;
+use Erebor\Mithril\Core\Console\Command;
+use Erebor\Mithril\Core\Environment;
 
 class ServeCommand extends Command
 {

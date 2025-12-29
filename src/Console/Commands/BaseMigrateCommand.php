@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace Erebor\Mithril\Console\Commands;
 
-use App\Core\Console\Command;
-use App\Core\Database;
-use App\Core\Environment;
-use App\Core\MigrationRunner;
+use Erebor\Mithril\Core\Console\Command;
+use Erebor\Mithril\Core\Database;
+use Erebor\Mithril\Core\Environment;
+use Erebor\Mithril\Core\MigrationRunner;
 use PDO;
 use PDOException;
 

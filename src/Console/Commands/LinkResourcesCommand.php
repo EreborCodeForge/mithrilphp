@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace Erebor\Mithril\Console\Commands;
 
-use App\Core\Console\Command;
+use Erebor\Mithril\Core\Console\Command;
 
 class LinkResourcesCommand extends Command
 {
@@ -13,7 +13,7 @@ class LinkResourcesCommand extends Command
         $root = $this->projectRoot();
 
         $target = $this->joinPath($root, 'resources');
-        $link   = $this->joinPath($root, 'public', 'resources');
+        $link = $this->joinPath($root, 'public', 'resources');
 
         if (!is_dir($target)) {
             $this->error('The "resources" directory does not exist: ' . $target);

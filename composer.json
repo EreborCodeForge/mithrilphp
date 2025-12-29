@@ -1,16 +1,17 @@
 {
   "name": "ereborcodeforge/mithrilphp",
-  "description": "Bem-vindo ao MithrilPHP, um framework PHP forjado para ser robusto como o metal lendário, porém leve e flexível para qualquer batalha de desenvolvimento.",
+ "description": "MithrilPHP is a lightweight and resilient PHP engine that silently protects applications, offering a solid core runtime, console, and HTTP foundation without dictating how your domain is built.",
   "type": "library",
   "license": "MIT",
   "keywords": [
     "php",
     "framework",
-    "mithrilphp",
+    "engine",
+    "console",
     "http",
     "routing",
-    "console",
-    "erebor"
+    "erebor",
+    "mithril"
   ],
   "homepage": "https://github.com/EreborCodeForge/mithrilphp",
   "support": {
@@ -32,14 +33,17 @@
   },
   "autoload": {
     "psr-4": {
-      "App\\": "src/"
+      "Erebor\\Mithril\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "App\\Tests\\": "tests/"
+      "Erebor\\Mithril\\Tests\\": "tests/"
     }
   },
+  "bin": [
+    "bin/forge"
+  ],
   "scripts": {
     "test": "phpunit"
   },
