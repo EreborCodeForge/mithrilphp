@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Core\Logger;
 
-use Erebor\Mithril\Core\Environment;
 use RuntimeException;
 
 class FileLogger implements LoggerInterface
