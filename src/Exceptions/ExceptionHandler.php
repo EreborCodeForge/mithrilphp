@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core\Exceptions;
+namespace Erebor\Mithril\Exceptions;
 
-use Erebor\Mithril\Core\Http\Response;
-use Erebor\Mithril\Core\Logger\LoggerInterface;
+use Erebor\Mithril\Http\Response;
+use Erebor\Mithril\Logger\LoggerInterface;
 use Erebor\Mithril\Presentation\Exceptions\HttpException;
 use Erebor\Mithril\Presentation\Exceptions\ValidationException;
 use Throwable;

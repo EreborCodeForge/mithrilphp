@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core\Enums;
+namespace Erebor\Mithril\Enums;
 
 enum HttpMethod: string
 {

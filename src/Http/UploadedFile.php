@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core\Http;
+namespace Erebor\Mithril\Http;
 
 class UploadedFile
 {

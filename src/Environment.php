@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core;
+namespace Erebor\Mithril;
 
 class Environment
 {

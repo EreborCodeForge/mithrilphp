@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core\Exceptions;
+namespace Erebor\Mithril\Exceptions;
 
 use Exception;
 use Throwable;

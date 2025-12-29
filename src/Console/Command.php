@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core\Console;
+namespace Erebor\Mithril\Console;
 
 abstract class Command
 {

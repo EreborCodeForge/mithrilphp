@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core\View;
+namespace Erebor\Mithril\View;
 
 interface ViewEngineInterface
 {

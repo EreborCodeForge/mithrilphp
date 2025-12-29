@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Console\Commands;
 
-use Erebor\Mithril\Core\Console\Command;
-use Erebor\Mithril\Core\Database;
-use Erebor\Mithril\Core\Environment;
-use Erebor\Mithril\Core\MigrationRunner;
+use Erebor\Mithril\Console\Command;
+use Erebor\Mithril\Database;
+use Erebor\Mithril\Environment;
+use Erebor\Mithril\MigrationRunner;
 use PDO;
 use PDOException;
 

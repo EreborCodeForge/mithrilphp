@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core;
+namespace Erebor\Mithril;
 
-use Erebor\Mithril\Core\Enums\HttpMethod;
-use Erebor\Mithril\Core\Http\Request;
-use Erebor\Mithril\Core\Http\Response;
+use Erebor\Mithril\Enums\HttpMethod;
+use Erebor\Mithril\Http\Request;
+use Erebor\Mithril\Http\Response;
 
 class Router
 {

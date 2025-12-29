@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Erebor\Mithril\Core;
+namespace Erebor\Mithril;
 
-use Erebor\Mithril\Core\Exceptions\ContainerException;
+use Erebor\Mithril\Exceptions\ContainerException;
 use ReflectionClass;
 use ReflectionNamedType;
 

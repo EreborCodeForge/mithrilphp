@@ -1,6 +1,6 @@
 <?php
 
-namespace Erebor\Mithril\Core\Exceptions;
+namespace Erebor\Mithril\Exceptions;
 
 use RuntimeException;
 

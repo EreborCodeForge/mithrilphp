@@ -1,10 +1,11 @@
+#!/usr/bin/env php
 <?php
 
 declare(strict_types=1);
 
-use Erebor\Mithril\Core\Console\Kernel;
+use Erebor\Mithril\Console\Kernel;
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../../../autoload.php';
 
 $kernel = new Kernel();
 $status = $kernel->handle($argv);

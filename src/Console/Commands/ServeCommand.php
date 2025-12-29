@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Console\Commands;
 
-use Erebor\Mithril\Core\Console\Command;
-use Erebor\Mithril\Core\Environment;
+use Erebor\Mithril\Console\Command;
+use Erebor\Mithril\Environment;
 
 class ServeCommand extends Command
 {
