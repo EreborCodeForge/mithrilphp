@@ -11,22 +11,16 @@ use ReflectionNamedType;
 final class Container
 {
     /**
-     * Instâncias já resolvidas (singletons ou objetos pré-registrados).
-     *
      * @var array<string, object>
      */
     private array $instances = [];
 
     /**
-     * Mapeamento de abstrações para concreções (classe ou fábrica).
-     *
      * @var array<string, callable|string>
      */
     private array $bindings = [];
 
     /**
-     * Registra um binding transitório (nova instância a cada chamada).
-     *
      * @param string              $abstract
      * @param callable|string     $concrete  Closure(Container $c): object ou FQCN
      */
@@ -36,10 +30,6 @@ final class Container
     }
 
     /**
-     * Registra um singleton.
-     *
-     * - Se for objeto, já é armazenado como instância.
-     * - Se for callable ou FQCN, é resolvido e armazenado na primeira chamada.
      *
      * @param string                    $abstract
      * @param callable|string|object    $concrete
@@ -63,7 +53,6 @@ final class Container
     }
 
     /**
-     * Recupera uma instância registrada ou resolve a classe.
      *
      * @throws ContainerException
      */
@@ -81,7 +70,6 @@ final class Container
     }
 
     /**
-     * Resolve uma classe concreta via reflexão.
      *
      * @throws ContainerException
      */
@@ -108,24 +96,17 @@ final class Container
         return $reflector->newInstanceArgs($dependencies);
     }
 
-    /**
-     * Verifica se há instância já criada (singleton).
-     */
     private function hasInstance(string $abstract): bool
     {
         return isset($this->instances[$abstract]);
     }
 
-    /**
-     * Verifica se há binding registrado.
-     */
     public function hasBinding(string $abstract): bool
     {
         return isset($this->bindings[$abstract]);
     }
 
     /**
-     * Resolve a partir de um binding (callable ou FQCN).
      *
      * @throws ContainerException
      */
@@ -149,7 +130,6 @@ final class Container
     }
 
     /**
-     * Resolve dependências de um construtor.
      *
      * @param \ReflectionParameter[] $parameters
      *
@@ -177,8 +157,6 @@ final class Container
     }
 
     /**
-     * Resolve parâmetros escalar/sem tipo de classe.
-     *
      * @throws ContainerException
      */
     private function resolveNonClassDependency(\ReflectionParameter $parameter): mixed

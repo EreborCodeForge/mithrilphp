@@ -13,12 +13,8 @@ final class Kernel
 
     public function __construct()
     {
-        // Register commands here
         $this->register(ServeCommand::class);
         $this->register(\Erebor\Mithril\Console\Commands\LinkResourcesCommand::class);
-        $this->register(MigrateCommand::class);
-        $this->register(\Erebor\Mithril\Console\Commands\MigrateRollbackCommand::class);
-        $this->register(\Erebor\Mithril\Console\Commands\MigrateFreshCommand::class);
     }
 
     public function register(string $commandClass): void

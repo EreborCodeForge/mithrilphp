@@ -40,16 +40,12 @@ class Router
 
     private function addRoute(HttpMethod $method, string $path, callable|array $handler, array $middlewares): void
     {
-        // Converte {param} e {param:regex} em named groups
         $pattern = preg_replace_callback(
             '/\{([a-zA-Z0-9_]+)(?::([^}]+))?\}/',
             function ($matches) use ($path) {
                 $param = $matches[1];
                 $regex = $matches[2] ?? '[^/]+';
 
-                // Se for catch-all (.*) e estiver no final do path
-                // Ex: /resources/{path:.*}
-                // Queremos casar também /resources e /resources/ (path vazio)
                 if ($regex === '.*') {
                     return "(?P<$param>.*)";
                 }
@@ -59,8 +55,6 @@ class Router
             $path
         );
 
-        // ✅ Se o padrão termina com "/(?P<xxx>.*)" então torna o "/xxx" opcional
-        // Isso permite: /resources e /resources/ e /resources/abc/def
         $pattern = preg_replace('#/(\(\?P<\w+>\.\*\))$#', '(?:/$1)?', $pattern);
 
         $pattern = "#^" . $pattern . "$#";
@@ -101,25 +95,21 @@ class Router
             return false;
         }
 
-        // Filter out numeric keys from matches
         $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
         return true;
     }
 
     private function handleRoute(array $route, Request $request, array $params): Response
     {
-        // Pipeline for middleware
         $handler = function (Request $req) use ($route, $params) {
             if (is_array($route['handler'])) {
                 [$controller, $action] = $route['handler'];
                 $controllerInstance = $this->container->get($controller);
 
-                // ✅ Se existir 'path', passa como string (controller signature serve(Request, string))
                 if (array_key_exists('path', $params)) {
                     return $controllerInstance->$action($req, $params['path']);
                 }
 
-                // fallback: mantém compatibilidade (controller que recebe array)
                 return $controllerInstance->$action($req, $params);
             }
 
