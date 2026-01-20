@@ -10,7 +10,6 @@ final class SqliteDriver implements DriverInterface
 {
     public function buildDsn(array $config, bool $includeDatabase = true): string
     {
-        // SQLite sempre inclui o "database" (arquivo)
         return "sqlite:{$config['database']}";
     }
 
