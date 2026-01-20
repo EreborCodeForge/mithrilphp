@@ -2,6 +2,7 @@
 
 namespace Erebor\Mithril\Tests\Unit;
 
+use Erebor\Mithril\Http\HttpContext;
 use PHPUnit\Framework\TestCase;
 use Erebor\Mithril\Http\HttpContext;
 use Erebor\Mithril\Http\Request;
@@ -77,7 +78,6 @@ class HttpContextTest extends TestCase
         $this->context->set('shared', 'data');
         $this->context->once('cached', fn() => 'item');
         
-        // Generate traceId before cloning to ensure it's copied
         $originalTraceId = $this->context->traceId();
 
         $newRequest = new Request([], [], ['REQUEST_URI' => '/new'], [], [], []);
