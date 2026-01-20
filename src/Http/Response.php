@@ -45,6 +45,11 @@ class Response
         return $this->content;
     }
 
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
     public static function json(mixed $data, int $statusCode = 200): self
     {
         $instance = new self();

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Http;
 
-class Request
+final class Request
 {
+    private readonly string $path;
+
     public function __construct(
         public readonly array $query,
         public readonly array $body,
@@ -13,7 +15,9 @@ class Request
         public readonly array $headers,
         public readonly array $cookies,
         public readonly array $files
-    ) {}
+    ) {
+        $this->path = self::extractPath($this->getUri());
+    }
 
     public static function createFromGlobals(): self
     {
@@ -22,50 +26,61 @@ class Request
 
         if (str_contains($contentType, 'application/json')) {
             $input = file_get_contents('php://input');
-            $body = json_decode($input, true) ?? [];
+            $decoded = json_decode($input ?: '', true);
+            $body = is_array($decoded) ? $decoded : [];
         } else {
             $body = $_POST;
         }
 
+        $headers = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
+        if (!is_array($headers)) {
+            $headers = [];
+        }
+
         return new self(
-            $_GET,
+            $_GET ?? [],
             $body,
-            $_SERVER,
-            getallheaders(),
-            $_COOKIE,
-            self::processFiles($_FILES)
+            $_SERVER ?? [],
+            $headers,
+            $_COOKIE ?? [],
+            self::processFiles($_FILES ?? [])
         );
     }
 
     private static function processFiles(array $files): array
     {
         $processed = [];
+
         foreach ($files as $key => $file) {
-            if (is_array($file['name'])) {
-                // Handle multiple file uploads (not implemented for simplicity, but good to have a placeholder)
-                // For now, let's assume single file uploads per key for this simple implementation
-                continue; 
+            if (!isset($file['name']) || is_array($file['name'])) {
+                continue;
             }
-            
+
             $processed[$key] = new UploadedFile(
                 $file['name'],
-                $file['type'],
-                $file['tmp_name'],
-                $file['error'],
-                $file['size']
+                $file['type'] ?? '',
+                $file['tmp_name'] ?? '',
+                $file['error'] ?? UPLOAD_ERR_NO_FILE,
+                $file['size'] ?? 0
             );
         }
+
         return $processed;
     }
 
     public function getMethod(): string
     {
-        return $this->server['REQUEST_METHOD'] ?? 'GET';
+        return strtoupper($this->server['REQUEST_METHOD'] ?? 'GET');
     }
 
     public function getUri(): string
     {
         return $this->server['REQUEST_URI'] ?? '/';
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
     }
 
     public function input(string $key, mixed $default = null): mixed
@@ -75,19 +90,41 @@ class Request
 
     public function header(string $key, mixed $default = null): mixed
     {
-        // Headers are often case-insensitive, but getallheaders returns them as is.
-        // For simplicity, we'll do a case-insensitive search if direct access fails.
         if (isset($this->headers[$key])) {
             return $this->headers[$key];
         }
 
         $keyLower = strtolower($key);
+
         foreach ($this->headers as $k => $v) {
-            if (strtolower($k) === $keyLower) {
+            if (strtolower((string) $k) === $keyLower) {
                 return $v;
             }
         }
 
         return $default;
+    }
+
+    private static function extractPath(string $uri): string
+    {
+        $qPos = strpos($uri, '?');
+        if ($qPos !== false) {
+            $uri = substr($uri, 0, $qPos);
+        }
+
+        if ($uri === '') {
+            return '/';
+        }
+
+        if ($uri[0] !== '/') {
+            $path = parse_url($uri, PHP_URL_PATH);
+            $uri = is_string($path) && $path !== '' ? $path : '/';
+        }
+
+        if ($uri !== '/' && str_ends_with($uri, '/')) {
+            $uri = rtrim($uri, '/');
+        }
+
+        return $uri === '' ? '/' : $uri;
     }
 }
