@@ -4,7 +4,6 @@ namespace Erebor\Mithril\Tests\Unit;
 
 use Erebor\Mithril\Http\HttpContext;
 use PHPUnit\Framework\TestCase;
-use Erebor\Mithril\Http\HttpContext;
 use Erebor\Mithril\Http\Request;
 
 class HttpContextTest extends TestCase
