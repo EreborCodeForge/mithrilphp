@@ -22,9 +22,11 @@ final class Container
     private array $compiledSingletons = [];
 
     /**
+     * Warm baseline restored by resetWorker() (typically compiled preloaded).
+     *
      * @var array<string, object>
      */
-    private array $compiledPreloaded = [];
+    private array $warmBaseline = [];
 
     private bool $compiled = false;
     private bool $compiledStrict = true;
@@ -70,6 +72,7 @@ final class Container
 
         $this->compiledFactories = $factories;
         $this->compiledSingletons = $singletons;
+        $this->warmBaseline = $preloaded;
         $this->instances = $preloaded;
     }
 
@@ -252,6 +255,6 @@ final class Container
     public function resetWorker(): void
     {
         $this->scopedInstances = [];
-        $this->instances = [];
+        $this->instances = $this->warmBaseline;
     }
 }
