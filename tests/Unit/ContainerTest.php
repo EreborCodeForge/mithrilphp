@@ -12,8 +12,8 @@ class ContainerTest extends TestCase
     {
         $container = new Container();
         $container->bind('foo', fn() => new \stdClass());
-        
         $this->assertTrue($container->has('foo'));
+        
         $this->assertInstanceOf(\stdClass::class, $container->get('foo'));
     }
 
@@ -86,6 +86,68 @@ class ContainerTest extends TestCase
         $this->expectException(ContainerException::class);
         $container = new Container();
         $container->get('non_existent_class');
+    }
+
+    public function testAlias()
+    {
+        $container = new Container();
+        $container->bind('foo', fn() => new \stdClass());
+        $container->alias('bar', 'foo');
+
+        $this->assertTrue($container->has('bar'));
+        $this->assertInstanceOf(\stdClass::class, $container->get('bar'));
+    }
+
+    public function testAliasResolution()
+    {
+        $container = new Container();
+        $instance = new \stdClass();
+        $container->singleton('foo', fn() => $instance);
+        $container->alias('bar', 'foo');
+
+        $this->assertSame($instance, $container->get('bar'));
+    }
+
+    public function testScopedService()
+    {
+        $container = new Container();
+        $container->scoped('scoped_service', fn() => new \stdClass());
+
+        // First scope
+        $container->beginScope();
+        $instance1 = $container->get('scoped_service');
+        $instance2 = $container->get('scoped_service');
+        $this->assertSame($instance1, $instance2);
+        $container->endScope();
+
+        // Second scope
+        $container->beginScope();
+        $instance3 = $container->get('scoped_service');
+        $this->assertNotSame($instance1, $instance3);
+        $container->endScope();
+    }
+
+    public function testLoadCompiled()
+    {
+        $container = new Container();
+        $this->assertFalse($container->isCompiled());
+
+        $instance = new \stdClass();
+        $container->loadCompiled(
+            factories: ['factory' => fn() => new \stdClass()],
+            singletons: ['singleton' => fn() => $instance],
+            preloaded: [],
+            strict: true
+        );
+
+        $this->assertTrue($container->isCompiled());
+        $this->assertSame($instance, $container->get('singleton'));
+        $this->assertInstanceOf(\stdClass::class, $container->get('factory'));
+        
+        // Strict mode should throw exception for unknown service
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage('Service [unknown] not in compiled container.');
+        $container->get('unknown');
     }
 }
 
