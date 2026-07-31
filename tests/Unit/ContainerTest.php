@@ -149,6 +149,38 @@ class ContainerTest extends TestCase
         $this->expectExceptionMessage('Service [unknown] not in compiled container.');
         $container->get('unknown');
     }
+
+    public function testResetWorkerRestoresPreloadedAndClearsScoped()
+    {
+        $preloaded = new \stdClass();
+        $preloaded->mark = 'warm';
+
+        $container = new Container();
+        $container->loadCompiled(
+            factories: [],
+            singletons: [],
+            preloaded: ['core' => $preloaded],
+            strict: false
+        );
+        $container->scoped('req', fn() => new \stdClass());
+
+        $container->beginScope();
+        $scoped = $container->get('req');
+        $lazy = new \stdClass();
+        $container->singleton('lazy', $lazy);
+        $this->assertSame($lazy, $container->get('lazy'));
+        $container->endScope();
+
+        $container->resetWorker();
+
+        $this->assertSame($preloaded, $container->get('core'));
+        $this->assertFalse($container->has('lazy'));
+
+        $container->beginScope();
+        $scopedAfter = $container->get('req');
+        $this->assertNotSame($scoped, $scopedAfter);
+        $container->endScope();
+    }
 }
 
 interface DependencyInterface {}
