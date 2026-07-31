@@ -10,16 +10,34 @@ use ReflectionNamedType;
 
 final class Container
 {
-    /**
-     * Runtime compiled mode:
-     * @var array<string, callable(self): object>
-     */
-    private array $factories = [];
 
     /**
      * @var array<string, callable(self): object>
      */
-    private array $singletons = [];
+    private array $compiledFactories = [];
+
+    /**
+     * @var array<string, callable(self): object>
+     */
+    private array $compiledSingletons = [];
+
+    /**
+     * @var array<string, object>
+     */
+    private array $compiledPreloaded = [];
+
+    private bool $compiled = false;
+    private bool $compiledStrict = true;
+
+    /**
+     * @var array<string, callable|string>
+     */
+    private array $bindings = [];
+
+    /**
+     * @var array<string, string>
+     */
+    private array $aliases = [];
 
     /**
      * @var array<string, object>
@@ -27,20 +45,20 @@ final class Container
     private array $instances = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, object>
      */
-    private array $aliases = [];
-    private array $bindings = [];
-    private array $classMetaCache = [];
-    private bool $compiled = false;
-    private bool $compiledStrict = true;
+    private array $scopedInstances = [];
 
     /**
-     *
-     * @param array<string, callable(self): object> $factories
-     * @param array<string, callable(self): object> $singletons
-     * @param array<string, object> $preloaded
+     * @var array<string, callable|string>
      */
+    private array $runtimeScoped = [];
+
+    /**
+     * @var array<string, array>
+     */
+    private array $classMetaCache = [];
+
     public function loadCompiled(
         array $factories,
         array $singletons,
@@ -50,14 +68,25 @@ final class Container
         $this->compiled = true;
         $this->compiledStrict = $strict;
 
-        $this->factories = $factories;
-        $this->singletons = $singletons;
+        $this->compiledFactories = $factories;
+        $this->compiledSingletons = $singletons;
         $this->instances = $preloaded;
     }
 
     public function isCompiled(): bool
     {
         return $this->compiled;
+    }
+
+    public function has(string $abstract): bool
+    {
+        $abstract = $this->aliases[$abstract] ?? $abstract;
+
+        return isset($this->instances[$abstract])
+            || isset($this->bindings[$abstract])
+            || isset($this->compiledFactories[$abstract])
+            || isset($this->compiledSingletons[$abstract])
+            || isset($this->runtimeScoped[$abstract]);
     }
 
     public function alias(string $alias, string $abstract): void
@@ -72,7 +101,7 @@ final class Container
 
     public function factory(string $abstract, callable|string $concrete): void
     {
-        $this->bind($abstract, $concrete);
+        $this->bindings[$abstract] = $concrete;
     }
 
     public function singleton(string $abstract, callable|string|object $concrete): void
@@ -82,91 +111,66 @@ final class Container
             return;
         }
 
-        $this->bindings[$abstract] = function (self $container) use ($concrete, $abstract): object {
-            if (!isset($container->instances[$abstract])) {
-                $container->instances[$abstract] = is_callable($concrete)
-                    ? $concrete($container)
-                    : $container->resolve($concrete);
+        $this->bindings[$abstract] = function (self $c) use ($concrete, $abstract) {
+            if (!isset($c->instances[$abstract])) {
+                $c->instances[$abstract] = is_callable($concrete)
+                    ? $concrete($c)
+                    : $c->resolve($concrete);
             }
-
-            return $container->instances[$abstract];
+            return $c->instances[$abstract];
         };
     }
 
-    public function has(string $abstract): bool
+    public function scoped(string $abstract, callable|string $concrete): void
     {
-        $abstract = $this->aliases[$abstract] ?? $abstract;
-
-        return isset($this->instances[$abstract])
-            || isset($this->singletons[$abstract])
-            || isset($this->factories[$abstract])
-            || isset($this->bindings[$abstract])
-            || (!$this->compiledStrict && class_exists($abstract));
+        $this->runtimeScoped[$abstract] = $concrete;
     }
 
-    /**
-     * @throws ContainerException
-     */
     public function get(string $abstract): object
     {
         $abstract = $this->aliases[$abstract] ?? $abstract;
+
+        if (isset($this->runtimeScoped[$abstract])) {
+            if (isset($this->scopedInstances[$abstract])) {
+                return $this->scopedInstances[$abstract];
+            }
+
+            $concrete = $this->runtimeScoped[$abstract];
+            return $this->scopedInstances[$abstract] = is_callable($concrete)
+                ? $concrete($this)
+                : $this->resolve($concrete);
+        }
 
         if (isset($this->instances[$abstract])) {
             return $this->instances[$abstract];
         }
 
-        if (isset($this->singletons[$abstract])) {
-            $factory = $this->singletons[$abstract];
-
-            $obj = $factory($this);
-            if (!is_object($obj)) {
-                throw new ContainerException("Compiled singleton [$abstract] must return object.");
-            }
-
-            $this->instances[$abstract] = $obj;
-            unset($this->singletons[$abstract]);
-
-            return $obj;
+        if (isset($this->compiledSingletons[$abstract])) {
+            $obj = ($this->compiledSingletons[$abstract])($this);
+            return $this->instances[$abstract] = $obj;
         }
 
-        if (isset($this->factories[$abstract])) {
-            $factory = $this->factories[$abstract];
-
-            $obj = $factory($this);
-            if (!is_object($obj)) {
-                throw new ContainerException("Compiled factory [$abstract] must return object.");
-            }
-
-            return $obj;
+        if (isset($this->compiledFactories[$abstract])) {
+            return ($this->compiledFactories[$abstract])($this);
         }
 
         if (isset($this->bindings[$abstract])) {
             $concrete = $this->bindings[$abstract];
 
             if (is_callable($concrete)) {
-                $obj = $concrete($this);
-                if (!is_object($obj)) {
-                    throw new ContainerException("Binding [$abstract] must return object.");
-                }
-                return $obj;
+                return $concrete($this);
             }
 
             return $this->resolve($concrete);
         }
 
-        // 5) Strict compiled: no reflection allowed
         if ($this->compiled && $this->compiledStrict) {
-            throw new ContainerException("Service [$abstract] not found in compiled container.");
+            throw new ContainerException("Service [$abstract] not in compiled container.");
         }
 
-        // 6) Dev fallback autowire
         return $this->resolve($abstract);
     }
 
-    /**
-     * DEV ONLY autowire (Reflection)
-     * @throws ContainerException
-     */
     public function resolve(string $concrete): object
     {
         if (!class_exists($concrete)) {
@@ -176,30 +180,23 @@ final class Container
         $reflector = new ReflectionClass($concrete);
 
         if (!$reflector->isInstantiable()) {
-            throw new ContainerException("Class {$concrete} is not instantiable.");
+            throw new ContainerException("Class {$concrete} not instantiable.");
         }
 
         $constructor = $reflector->getConstructor();
-
-        if ($constructor === null) {
+        if (!$constructor) {
             return new $concrete();
         }
 
         $deps = $this->resolveConstructorDeps($concrete, $constructor->getParameters());
-
         return $reflector->newInstanceArgs($deps);
     }
 
-    /**
-     * @param class-string $concrete
-     * @param \ReflectionParameter[] $params
-     */
     private function resolveConstructorDeps(string $concrete, array $params): array
     {
         $meta = $this->classMetaCache[$concrete] ??= $this->buildClassMeta($params);
 
         $deps = [];
-
         foreach ($meta as $dep) {
             if ($dep['type'] === 'class') {
                 $deps[] = $this->get($dep['name']);
@@ -217,9 +214,6 @@ final class Container
         return $deps;
     }
 
-    /**
-     * @param \ReflectionParameter[] $parameters
-     */
     private function buildClassMeta(array $parameters): array
     {
         $meta = [];
@@ -234,12 +228,30 @@ final class Container
                 continue;
             }
 
-            $meta[] = [
-                'type' => 'class',
-                'name' => $type->getName(),
-            ];
+            $meta[] = ['type' => 'class', 'name' => $type->getName()];
         }
 
         return $meta;
+    }
+
+    public function beginScope(): void
+    {
+        $this->scopedInstances = [];
+    }
+
+    public function endScope(): void
+    {
+        foreach ($this->scopedInstances as $obj) {
+            if (method_exists($obj, 'cleanup')) {
+                $obj->cleanup();
+            }
+        }
+        $this->scopedInstances = [];
+    }
+
+    public function resetWorker(): void
+    {
+        $this->scopedInstances = [];
+        $this->instances = [];
     }
 }
