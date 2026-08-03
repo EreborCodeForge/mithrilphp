@@ -1,0 +1,38 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Erebor\Mithril\Runtime\Eregion\Exceptions\ProtocolException;
+use Erebor\Mithril\Runtime\Eregion\WorkerCliOptions;
+use Erebor\Mithril\Runtime\Eregion\WorkerLauncher;
+use Erebor\Mithril\Runtime\WorkerExitCode;
+
+$autoloadCandidates = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+$autoloaded = false;
+foreach ($autoloadCandidates as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        $autoloaded = true;
+        break;
+    }
+}
+
+if (!$autoloaded) {
+    fwrite(STDERR, "Unable to locate Composer autoload\n");
+    exit(WorkerExitCode::BootstrapFailure->value);
+}
+
+try {
+    $options = WorkerCliOptions::fromArgv($argv);
+} catch (ProtocolException $e) {
+    fwrite(STDERR, $e->getMessage() . "\n");
+    exit(WorkerExitCode::BootstrapFailure->value);
+}
+
+$result = (new WorkerLauncher())->run($options);
+exit($result->exitCode()->value);

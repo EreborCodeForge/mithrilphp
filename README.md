@@ -106,6 +106,7 @@ $bridge = new InMemoryBridge([$requestA, $requestB]);
 
 - `FpmOnceBridge` — classic one-shot HTTP  
 - `InMemoryBridge` — queue of requests for tests/benchmarks  
+- `EregionBridge` — UDS + MessagePack for the Eregion Application Server (`forge serve`)  
 - Implement `RequestBridge` for RoadRunner, FrankenPHP, or any transport  
 
 `Container::loadCompiled(...)` stores a **warm baseline**; `resetWorker()` clears scoped/lazy instances and restores preloaded services without a full reboot.

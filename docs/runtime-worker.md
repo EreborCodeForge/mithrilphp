@@ -75,6 +75,8 @@ $bridge = new InMemoryBridge([
 
 Custom transports (RoadRunner, FrankenPHP, TCP, etc.) only need a `RequestBridge` implementation. Those adapters are intentionally out of the core package.
 
+Production path: **Eregion** (`EregionBridge` + `bin/eregion-worker`). See the Eregion section below and `forge serve`.
+
 ## Compiled container + warm baseline
 
 ```php
@@ -96,6 +98,32 @@ $container->resetWorker(); // clears scoped + lazy instances; restores preloaded
 
 Prefer `endScope()` per request. Call `resetWorker()` only when recycling a long-lived worker without exiting the process (memory pressure). With `maxRequests`, exiting the process is usually cleaner; the supervisor starts a new worker that loads the compiled cache again (still cheap).
 
+## Eregion bridge
+
+For production multi-request serving, use the Eregion Application Server:
+
+```bash
+vendor/bin/forge eregion:craft              # cwd / project root
+vendor/bin/forge eregion:craft --dir=/app   # explicit directory
+vendor/bin/forge eregion:craft --force      # overwrite existing files
+vendor/bin/forge serve --host=0.0.0.0 --port=8080
+vendor/bin/forge server:check
+vendor/bin/forge server:install   # resolve binary path (no download yet)
+```
+
+`eregion:craft` scaffolds `eregion.yaml` (DX starter; Go owns runtime defaults) and `var/runtime/eregion.json`.  
+`forge serve` refreshes the manifest and execs the Eregion binary. Eregion spawns:
+
+```bash
+php vendor/bin/eregion-worker \
+  --socket=... --worker-id=... --generation=... \
+  --max-requests=... --memory-limit-mb=... --manifest=...
+```
+
+The PHP worker creates the UDS, completes `hello`/`ready`, and speaks length-prefixed MessagePack. Recycle is cooperative (`meta.recycle` + exit `10`). Use `forge serve:php` for the classic `php -S` development server.
+
+Requires `ext-msgpack` and `ext-sockets`. See `docs/mithrilphp-eregion-bridge-spec.md`.
+
 ## Lifetimes checklist (migration)
 
 1. **Do not** register `Request` / `HttpContext` as singletons — use `scoped()` or create them in `handle`.
@@ -107,7 +135,7 @@ Prefer `endScope()` per request. Call `resetWorker()` only when recycling a long
 ## Efficiency notes
 
 - Hot path: no reflection when `loadCompiled(..., strict: true)` and every service is in the artifact.
-- Worker does not wrap `handle()` in a generic catch — your Kernel keeps exception handling.
+- Uncaught exceptions in `handle()` become HTTP 500 responses; the worker stays healthy unless recycle/protocol/scope fails.
 - Scope open/close is the only container bookkeeping per request when bindings are already warm.
 
 ## Related APIs
@@ -115,3 +143,4 @@ Prefer `endScope()` per request. Call `resetWorker()` only when recycling a long
 - `Container::scoped()`, `beginScope()`, `endScope()`, `resetWorker()`
 - `Container::loadCompiled()`, `isCompiled()`
 - `Router::loadCompiledRoutes()` for O(1) matching without rebuilding routes each boot
+- `Runtime\Eregion\EregionBridge`, `Worker::runResult()`, recycling policies, `WorkerExitCode`
