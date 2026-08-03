@@ -22,3 +22,10 @@ Thumbs.db
 
 *.sqlite
 *.sqlite-journal
+
+# Eregion local runtime (app-side artifacts / Go binary)
+/var/
+/eregion.yaml
+/bin/eregion
+/bin/eregion.exe
+/.mithril/

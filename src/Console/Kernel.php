@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Console;
 
-use Erebor\Mithril\Console\Commands\MigrateCommand;
+use Erebor\Mithril\Console\Commands\EregionCraftCommand;
+use Erebor\Mithril\Console\Commands\LinkResourcesCommand;
 use Erebor\Mithril\Console\Commands\ServeCommand;
+use Erebor\Mithril\Console\Commands\ServePhpCommand;
+use Erebor\Mithril\Console\Commands\ServerCheckCommand;
+use Erebor\Mithril\Console\Commands\ServerInstallCommand;
+use Erebor\Mithril\Console\Commands\ServerVersionCommand;
 
 final class Kernel
 {
@@ -14,7 +19,12 @@ final class Kernel
     public function __construct()
     {
         $this->register(ServeCommand::class);
-        $this->register(\Erebor\Mithril\Console\Commands\LinkResourcesCommand::class);
+        $this->register(ServePhpCommand::class);
+        $this->register(EregionCraftCommand::class);
+        $this->register(ServerCheckCommand::class);
+        $this->register(ServerInstallCommand::class);
+        $this->register(ServerVersionCommand::class);
+        $this->register(LinkResourcesCommand::class);
     }
 
     public function register(string $commandClass): void
@@ -59,7 +69,7 @@ final class Kernel
     {
         echo Color::yellow("Available commands:") . PHP_EOL;
         foreach ($this->commands as $signature => $class) {
-            echo Color::green(str_pad($signature, 20)) . $class::getDescription() . PHP_EOL;
+            echo Color::green(str_pad($signature, 22)) . $class::getDescription() . PHP_EOL;
         }
     }
 
@@ -74,7 +84,6 @@ final class Kernel
     ASCII;
 
         echo Color::blue($logo) . PHP_EOL;
-        echo Color::red(" \n Forged by EreborCodeForgee") . PHP_EOL . PHP_EOL;
+        echo Color::red(" \n Forged by EreborCodeForge") . PHP_EOL . PHP_EOL;
     }
-
 }
