@@ -5,9 +5,24 @@ declare(strict_types=1);
 
 use Erebor\Mithril\Console\Kernel;
 
-require __DIR__ . '/../../../autoload.php';
+$autoloadCandidates = [
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+
+$autoloaded = false;
+foreach ($autoloadCandidates as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        $autoloaded = true;
+        break;
+    }
+}
+
+if (!$autoloaded) {
+    fwrite(STDERR, "Unable to locate Composer autoload\n");
+    exit(1);
+}
 
 $kernel = new Kernel();
-$status = $kernel->handle($argv);
-
-exit($status);
+exit($kernel->handle($argv));
