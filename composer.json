@@ -47,6 +47,12 @@
     "bin/forge",
     "bin/eregion-worker"
   ],
+  "extra": {
+    "mithril": {
+      "eregion": "v0.1.0",
+      "eregion_repo": "EreborCodeForge/eregion"
+    }
+  },
   "scripts": {
     "test": "phpunit"
   },

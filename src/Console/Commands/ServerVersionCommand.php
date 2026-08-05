@@ -25,7 +25,7 @@ final class ServerVersionCommand extends Command
         $binary = (new EregionBinaryResolver())->resolve($cwd);
 
         if ($binary === null) {
-            $this->error('Eregion binary not found. Run forge server:install for instructions.');
+            $this->error('Eregion binary not found. Run: forge server:install');
             return 1;
         }
 

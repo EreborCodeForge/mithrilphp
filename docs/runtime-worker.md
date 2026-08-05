@@ -107,8 +107,9 @@ vendor/bin/forge eregion:craft              # cwd / project root
 vendor/bin/forge eregion:craft --dir=/app   # explicit directory
 vendor/bin/forge eregion:craft --force      # overwrite existing files
 vendor/bin/forge serve --host=0.0.0.0 --port=8080
+vendor/bin/forge server:install   # download + SHA-256 → .mithril/bin/eregion
+vendor/bin/forge server:install --force
 vendor/bin/forge server:check
-vendor/bin/forge server:install   # resolve binary path (no download yet)
 ```
 
 `eregion:craft` scaffolds `eregion.yaml` (DX starter; Go owns runtime defaults) and `var/runtime/eregion.json`.  
