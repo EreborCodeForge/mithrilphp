@@ -1,6 +1,7 @@
 # Eregion — fonte confiável do binário
 
-**Status:** Draft  
+**Status:** Implemented (Eregion `v0.1.0` published)  
+**Release de referência:** https://github.com/EreborCodeForge/eregion/releases/tag/v0.1.0  
 **Audiência:** maintainers do Application Server (Go) e da Forge (MithrilPHP)  
 **Objetivo:** definir o que o repositório Eregion deve publicar para que `forge server:install` baixe, verifique e instale o binário com segurança — sem clonar o repo nem exigir toolchain Go.
 
@@ -38,8 +39,8 @@ forge server:install
 |-----------|---------|
 | Versionamento | Tags semânticas: `v0.1.0`, `v1.2.3` |
 | Imutabilidade | Assets de um tag **não** são reescritos após publicação |
-| Canal | GitHub Releases do repo canônico do Eregion (org/repo estáveis) |
-| “latest” | Permitido para DX; **produção** usa versão pinada pela Forge |
+| Canal | GitHub Releases do repo canônico: `EreborCodeForge/eregion` |
+| “latest” | Permitido para DX; **produção** usa versão pinada pela Forge (`extra.mithril.eregion` / `EREGION_VERSION`) |
 
 A Forge não deve depender de `go build` no caminho feliz.
 
@@ -131,11 +132,19 @@ Lado MithrilPHP (quando `server:install` deixar de ser stub):
 
 | Item | Exemplo |
 |------|---------|
-| Repo | `EreborCodeForge/eregion` (configurável) |
-| Versão pinada | `extra.mithril.eregion` em `composer.json` ou `EREGION_VERSION` |
+| Repo | `EreborCodeForge/eregion` (`extra.mithril.eregion_repo` / `EREGION_REPO`) |
+| Versão pinada | `extra.mithril.eregion` = `v0.1.0` (hoje) ou `EREGION_VERSION` / `--version` |
 | URL do asset | `https://github.com/<org>/<repo>/releases/download/vX.Y.Z/eregion-<os>-<arch>` |
 | Destino local | `.mithril/bin/eregion` (`.exe` no Windows) |
 | Overrides | `EREGION_BINARY`, depois `PATH`, depois `.mithril/bin/` |
+
+Comando:
+
+```bash
+vendor/bin/forge server:install
+vendor/bin/forge server:install --force
+vendor/bin/forge server:install --version=v0.1.0
+```
 
 Ordem de resolução (já alinhada à lib):
 

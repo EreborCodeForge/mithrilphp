@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Erebor\Mithril\Runtime\Eregion;
 
 /**
- * Resolves the Eregion binary path without downloading.
+ * Resolves the Eregion binary path (env, PATH, or .mithril/bin).
  */
 final class EregionBinaryResolver
 {
@@ -22,19 +22,26 @@ final class EregionBinaryResolver
         }
 
         $cwd = $workingDirectory ?? getcwd() ?: '.';
-        $local = rtrim($cwd, '/\\') . DIRECTORY_SEPARATOR . '.mithril' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'eregion';
+        $local = $this->localInstallPath($cwd);
         if ($this->isExecutable($local)) {
             return $local;
         }
 
+        return null;
+    }
+
+    public function localInstallPath(string $workingDirectory): string
+    {
+        $base = rtrim($workingDirectory, '/\\')
+            . DIRECTORY_SEPARATOR . '.mithril'
+            . DIRECTORY_SEPARATOR . 'bin'
+            . DIRECTORY_SEPARATOR . 'eregion';
+
         if (PHP_OS_FAMILY === 'Windows') {
-            $localExe = $local . '.exe';
-            if ($this->isExecutable($localExe)) {
-                return $localExe;
-            }
+            return $base . '.exe';
         }
 
-        return null;
+        return $base;
     }
 
     public function isExecutable(string $path): bool
