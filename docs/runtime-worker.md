@@ -124,6 +124,8 @@ The PHP worker creates the UDS, completes `hello`/`ready`, and speaks length-pre
 
 Requires `ext-msgpack` and `ext-sockets`. See `docs/mithrilphp-eregion-bridge-spec.md`.
 
+Binary install source (what the Go repo must publish for `server:install`): [eregion-binary-distribution.md](eregion-binary-distribution.md).
+
 ## Lifetimes checklist (migration)
 
 1. **Do not** register `Request` / `HttpContext` as singletons — use `scoped()` or create them in `handle`.
