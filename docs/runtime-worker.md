@@ -127,6 +127,8 @@ Requires `ext-msgpack` and `ext-sockets`. See `docs/mithrilphp-eregion-bridge-sp
 
 Binary install source (what the Go repo must publish for `server:install`): [eregion-binary-distribution.md](eregion-binary-distribution.md).
 
+Job / queue warm path (no Eregion): [job-worker.md](job-worker.md).
+
 ## Lifetimes checklist (migration)
 
 1. **Do not** register `Request` / `HttpContext` as singletons — use `scoped()` or create them in `handle`.

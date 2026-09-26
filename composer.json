@@ -45,7 +45,8 @@
   },
   "bin": [
     "bin/forge",
-    "bin/eregion-worker"
+    "bin/eregion-worker",
+    "bin/job-worker"
   ],
   "extra": {
     "mithril": {
