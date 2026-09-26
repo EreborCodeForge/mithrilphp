@@ -1,0 +1,29 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Erebor\Mithril\Runtime\JobWorkerLauncher;
+use Erebor\Mithril\Runtime\WorkerExitCode;
+
+$autoloadCandidates = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+$autoloaded = false;
+foreach ($autoloadCandidates as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        $autoloaded = true;
+        break;
+    }
+}
+
+if (!$autoloaded) {
+    fwrite(STDERR, "Unable to locate Composer autoload\n");
+    exit(WorkerExitCode::BootstrapFailure->value);
+}
+
+$result = (new JobWorkerLauncher())->runFromArgv($argv);
+exit($result->exitCode()->value);
