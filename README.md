@@ -41,6 +41,7 @@ Inspired by the Mithril worn by Frodo, MithrilPHP follows a simple principle:
 - A silent execution layer
 - A console and HTTP backbone
 - A **warm Worker** path for long-lived processes with a compiled container
+- A **job Worker** path for queue / schedule processes (no Eregion)
 
 ---
 
@@ -60,7 +61,8 @@ Those responsibilities belong to **frameworks built on top of MithrilPHP**.
 - HTTP Kernel and routing execution  
 - Console Kernel and command execution  
 - Dependency Injection container (runtime + compiled)  
-- Warm Worker loop (boot once, scoped per request)  
+- Warm Worker loop (boot once, scoped per request)
+- Job Worker loop (boot once, scoped per job)
 - Environment variable access  
 - Configuration loading  
 - Low-level abstractions required by frameworks  
@@ -112,6 +114,51 @@ $bridge = new InMemoryBridge([$requestA, $requestB]);
 `Container::loadCompiled(...)` stores a **warm baseline**; `resetWorker()` clears scoped/lazy instances and restores preloaded services without a full reboot.
 
 Full guide: [docs/runtime-worker.md](docs/runtime-worker.md)
+
+---
+
+## Job Worker
+
+Apps that process **jobs / queues / schedules** (Durin preset `worker`) need a warm loop without Eregion or HTTP bridges.
+
+| Lifetime | Use for |
+|----------|---------|
+| **preloaded / singleton** | Dispatcher, logger, connection pools, `JobTransport` |
+| **scoped** | Per-job state (UoW, tickets) |
+| **factory** | Throwaway instances |
+
+```php
+use Erebor\Mithril\Contracts\JobApplication;
+use Erebor\Mithril\Jobs\InMemoryJobTransport;
+use Erebor\Mithril\Jobs\JobTransport;
+use Erebor\Mithril\Runtime\JobWorker;
+
+final class JobKernel implements JobApplication
+{
+    // boot(), handle(JobEnvelope): JobResult, getContainer()
+}
+
+$kernel = new JobKernel();
+$kernel->boot();
+$transport = $kernel->getContainer()->get(JobTransport::class);
+(new JobWorker($kernel, $transport))->run();
+```
+
+CLI:
+
+```bash
+php vendor/bin/job-worker
+php vendor/bin/job-worker --kernel=App\\JobKernel
+```
+
+Kernel discovery: `--kernel` → env `MITHRIL_JOB_KERNEL` → `composer.json` `extra.mithril.job_kernel` → `App\JobKernel`.
+
+After boot, `JobTransport` **must** be bound in the container (missing binding → bootstrap exit `20`).
+
+- `InMemoryJobTransport` — FIFO queue for tests/demos  
+- Implement `JobTransport` for Redis, SQS, Rabbit, or any broker  
+
+Full guide: [docs/job-worker.md](docs/job-worker.md) · Spec: [docs/worker-runtime.md](docs/worker-runtime.md)
 
 ---
 
