@@ -6,8 +6,11 @@ namespace Erebor\Mithril\Jobs;
 
 /**
  * FIFO in-memory queue for tests and demos. Retry requeues immediately (delayMs is a hint only).
+ *
+ * When idleWhenEmpty is false (default), an empty queue returns stop — suitable for finite test runs.
+ * When true, an empty queue returns idle — suitable for persistent consumers.
  */
-final class InMemoryJobTransport implements JobTransport
+final class InMemoryJobTransport implements InterruptibleJobTransport
 {
     /** @var list<JobEnvelope> */
     private array $queue;
@@ -18,11 +21,15 @@ final class InMemoryJobTransport implements JobTransport
     /** @var list<string> */
     private array $rejected = [];
 
+    private bool $stopped = false;
+
     /**
      * @param list<JobEnvelope> $jobs
      */
-    public function __construct(array $jobs = [])
-    {
+    public function __construct(
+        array $jobs = [],
+        private readonly bool $idleWhenEmpty = false,
+    ) {
         $this->queue = array_values($jobs);
     }
 
@@ -31,13 +38,24 @@ final class InMemoryJobTransport implements JobTransport
         $this->queue[] = $job;
     }
 
-    public function next(): ?JobEnvelope
+    public function poll(): JobPollResult
     {
-        if ($this->queue === []) {
-            return null;
+        if ($this->stopped) {
+            return JobPollResult::stop();
         }
 
-        return array_shift($this->queue);
+        if ($this->queue === []) {
+            return $this->idleWhenEmpty ? JobPollResult::idle() : JobPollResult::stop();
+        }
+
+        $job = array_shift($this->queue);
+
+        return JobPollResult::job($job);
+    }
+
+    public function stop(): void
+    {
+        $this->stopped = true;
     }
 
     public function ack(JobEnvelope $job): void

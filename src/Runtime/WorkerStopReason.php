@@ -7,9 +7,11 @@ namespace Erebor\Mithril\Runtime;
 enum WorkerStopReason: string
 {
     case Stopped = 'stopped';
+    case Drained = 'drained';
     case Recycled = 'recycled';
     case RemoteShutdown = 'remote_shutdown';
     case ProtocolFailure = 'protocol_failure';
+    case TransportFailure = 'transport_failure';
     case ScopeCleanupFailure = 'scope_cleanup_failure';
     case BootstrapFailure = 'bootstrap_failure';
 }

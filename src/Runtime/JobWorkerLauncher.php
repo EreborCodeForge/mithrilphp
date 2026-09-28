@@ -6,6 +6,7 @@ namespace Erebor\Mithril\Runtime;
 
 use Erebor\Mithril\Contracts\JobApplication;
 use Erebor\Mithril\Jobs\JobTransport;
+use Erebor\Mithril\Runtime\Recycling\RecyclingPolicy;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -63,6 +64,30 @@ final class JobWorkerLauncher
             return new WorkerResult(0, WorkerStopReason::BootstrapFailure);
         }
 
-        return (new JobWorker($app, $transport))->runResult();
+        $recyclingPolicy = null;
+        if ($container->has(RecyclingPolicy::class)) {
+            $bound = $container->get(RecyclingPolicy::class);
+            if ($bound instanceof RecyclingPolicy) {
+                $recyclingPolicy = $bound;
+            }
+        }
+
+        $observer = null;
+        if ($container->has(JobWorkerObserver::class)) {
+            $bound = $container->get(JobWorkerObserver::class);
+            if ($bound instanceof JobWorkerObserver) {
+                $observer = $bound;
+            }
+        }
+
+        $metadata = EregionWorkloadMetadata::fromEnvironment();
+
+        return (new JobWorker(
+            app: $app,
+            transport: $transport,
+            recyclingPolicy: $recyclingPolicy,
+            observer: $observer,
+            eregionMetadata: $metadata->isPresent() ? $metadata : null,
+        ))->runResult();
     }
 }

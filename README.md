@@ -155,10 +155,11 @@ Kernel discovery: `--kernel` → env `MITHRIL_JOB_KERNEL` → `composer.json` `e
 
 After boot, `JobTransport` **must** be bound in the container (missing binding → bootstrap exit `20`).
 
-- `InMemoryJobTransport` — FIFO queue for tests/demos  
-- Implement `JobTransport` for Redis, SQS, Rabbit, or any broker  
+- `InMemoryJobTransport` — FIFO queue for tests/demos (`poll()` → job / idle / stop)
+- Implement `JobTransport` for Redis, SQS, Rabbit, or any broker
+- Optional: `JobDispatcher`, `JobWorkerObserver`, recycle policies, Eregion env metadata
 
-Full guide: [docs/job-worker.md](docs/job-worker.md) · Spec: [docs/worker-runtime.md](docs/worker-runtime.md)
+Full guide: [docs/job-worker.md](docs/job-worker.md) · Spec: [docs/mithrilphp-job-runtime-spec.md](docs/mithrilphp-job-runtime-spec.md)
 
 ---
 

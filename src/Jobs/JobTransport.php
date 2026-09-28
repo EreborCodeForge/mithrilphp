@@ -9,8 +9,10 @@ namespace Erebor\Mithril\Jobs;
  */
 interface JobTransport
 {
-    /** Next job, or null when the transport signals idle/stop. */
-    public function next(): ?JobEnvelope;
+    /**
+     * Poll for work: a job, temporary idle (keep process alive), or permanent stop.
+     */
+    public function poll(): JobPollResult;
 
     public function ack(JobEnvelope $job): void;
 

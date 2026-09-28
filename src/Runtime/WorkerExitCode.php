@@ -15,10 +15,13 @@ enum WorkerExitCode: int
     public static function fromStopReason(WorkerStopReason $reason): self
     {
         return match ($reason) {
-            WorkerStopReason::Stopped, WorkerStopReason::RemoteShutdown => self::Normal,
+            WorkerStopReason::Stopped,
+            WorkerStopReason::Drained,
+            WorkerStopReason::RemoteShutdown => self::Normal,
             WorkerStopReason::Recycled => self::Recycled,
             WorkerStopReason::BootstrapFailure => self::BootstrapFailure,
-            WorkerStopReason::ProtocolFailure => self::ProtocolFailure,
+            WorkerStopReason::ProtocolFailure,
+            WorkerStopReason::TransportFailure => self::ProtocolFailure,
             WorkerStopReason::ScopeCleanupFailure => self::ScopeCleanupFailure,
         };
     }
