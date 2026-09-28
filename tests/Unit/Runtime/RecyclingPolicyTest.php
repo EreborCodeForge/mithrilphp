@@ -48,10 +48,12 @@ final class RecyclingPolicyTest extends TestCase
     public function testExitCodeMapping(): void
     {
         $this->assertSame(0, WorkerExitCode::fromStopReason(WorkerStopReason::Stopped)->value);
+        $this->assertSame(0, WorkerExitCode::fromStopReason(WorkerStopReason::Drained)->value);
         $this->assertSame(0, WorkerExitCode::fromStopReason(WorkerStopReason::RemoteShutdown)->value);
         $this->assertSame(10, WorkerExitCode::fromStopReason(WorkerStopReason::Recycled)->value);
         $this->assertSame(20, WorkerExitCode::fromStopReason(WorkerStopReason::BootstrapFailure)->value);
         $this->assertSame(21, WorkerExitCode::fromStopReason(WorkerStopReason::ProtocolFailure)->value);
+        $this->assertSame(21, WorkerExitCode::fromStopReason(WorkerStopReason::TransportFailure)->value);
         $this->assertSame(22, WorkerExitCode::fromStopReason(WorkerStopReason::ScopeCleanupFailure)->value);
     }
 }

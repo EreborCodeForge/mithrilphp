@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Erebor\Mithril\Jobs;
 
 /**
- * Source of jobs for JobWorker. Brokers live in app adapters; core only owns the contract.
+ * Pre-poll JobTransport shape: null from next() means stop.
+ *
+ * @deprecated Implement JobTransport::poll() instead.
  */
-interface JobTransport
+interface LegacyJobTransport
 {
-    /**
-     * Poll for work: a job, temporary idle (keep process alive), or permanent stop.
-     */
-    public function poll(): JobPollResult;
+    public function next(): ?JobEnvelope;
 
     public function ack(JobEnvelope $job): void;
 

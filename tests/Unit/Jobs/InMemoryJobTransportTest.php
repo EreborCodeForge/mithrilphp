@@ -11,15 +11,30 @@ use PHPUnit\Framework\TestCase;
 
 final class InMemoryJobTransportTest extends TestCase
 {
-    public function testFifoNext(): void
+    public function testFifoPoll(): void
     {
         $a = new JobEnvelope('1', 'a', null);
         $b = new JobEnvelope('2', 'b', null);
         $transport = new InMemoryJobTransport([$a, $b]);
 
-        $this->assertSame($a, $transport->next());
-        $this->assertSame($b, $transport->next());
-        $this->assertNull($transport->next());
+        $this->assertSame($a, $transport->poll()->job);
+        $this->assertSame($b, $transport->poll()->job);
+        $this->assertTrue($transport->poll()->isStop());
+    }
+
+    public function testIdleWhenEmpty(): void
+    {
+        $transport = new InMemoryJobTransport([], idleWhenEmpty: true);
+
+        $this->assertTrue($transport->poll()->isIdle());
+    }
+
+    public function testStopUnblocksPersistentPoll(): void
+    {
+        $transport = new InMemoryJobTransport([], idleWhenEmpty: true);
+        $transport->stop();
+
+        $this->assertTrue($transport->poll()->isStop());
     }
 
     public function testAckRecordsAndDoesNotRequeue(): void
@@ -27,12 +42,12 @@ final class InMemoryJobTransportTest extends TestCase
         $job = new JobEnvelope('1', 'a', null);
         $transport = new InMemoryJobTransport([$job]);
 
-        $taken = $transport->next();
+        $taken = $transport->poll()->job;
         $this->assertNotNull($taken);
         $transport->ack($taken);
 
         $this->assertSame(['1'], $transport->ackedIds());
-        $this->assertNull($transport->next());
+        $this->assertTrue($transport->poll()->isStop());
     }
 
     public function testRetryRequeuesWithIncrementedAttempt(): void
@@ -40,7 +55,7 @@ final class InMemoryJobTransportTest extends TestCase
         $job = new JobEnvelope('1', 'a', ['x' => 1], attempt: 1);
         $transport = new InMemoryJobTransport([$job]);
 
-        $taken = $transport->next();
+        $taken = $transport->poll()->job;
         $this->assertNotNull($taken);
         $transport->retry($taken, JobResult::retry('later', 100));
 
@@ -56,12 +71,12 @@ final class InMemoryJobTransportTest extends TestCase
         $job = new JobEnvelope('1', 'a', null);
         $transport = new InMemoryJobTransport([$job]);
 
-        $taken = $transport->next();
+        $taken = $transport->poll()->job;
         $this->assertNotNull($taken);
         $transport->reject($taken, JobResult::reject('bad'));
 
         $this->assertSame(['1'], $transport->rejectedIds());
         $this->assertSame([], $transport->pending());
-        $this->assertNull($transport->next());
+        $this->assertTrue($transport->poll()->isStop());
     }
 }
