@@ -1,6 +1,6 @@
 # MithrilPHP — Persistent Job Runtime Integration
 
-**Status:** implementation-ready  
+**Status:** done (Phase 2 — released as v3.0.0)  
 **Repository:** `EreborCodeForge/mithrilphp`
 
 # Mission
