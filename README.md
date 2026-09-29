@@ -159,7 +159,7 @@ After boot, `JobTransport` **must** be bound in the container (missing binding �
 - Implement `JobTransport` for Redis, SQS, Rabbit, or any broker
 - Optional: `JobDispatcher`, `JobWorkerObserver`, recycle policies, Eregion env metadata
 
-Full guide: [docs/job-worker.md](docs/job-worker.md) · Spec: [docs/mithrilphp-job-runtime-spec.md](docs/mithrilphp-job-runtime-spec.md)
+Full guide: [docs/job-worker.md](docs/job-worker.md) · Spec: [docs/job-runtime-spec.md](docs/job-runtime-spec.md)
 
 ---
 

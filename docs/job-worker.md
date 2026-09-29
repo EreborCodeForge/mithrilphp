@@ -136,4 +136,4 @@ Reuses `WorkerExitCode`:
 - Spawning workers from handlers
 - Eregion/job protocol in this phase
 
-Integration spec: [mithrilphp-job-runtime-spec.md](mithrilphp-job-runtime-spec.md).
+Integration spec: [job-runtime-spec.md](job-runtime-spec.md).
