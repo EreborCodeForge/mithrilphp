@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Runtime;
 
+use Erebor\Mithril\Container;
 use Erebor\Mithril\Contracts\JobApplication;
 use Erebor\Mithril\Jobs\InterruptibleJobTransport;
 use Erebor\Mithril\Jobs\JobEnvelope;
@@ -16,6 +17,7 @@ use Erebor\Mithril\Runtime\Recycling\MaxUptimePolicy;
 use Erebor\Mithril\Runtime\Recycling\MemoryLimitPolicy;
 use Erebor\Mithril\Runtime\Recycling\RecyclingPolicy;
 use Erebor\Mithril\Runtime\Recycling\WorkerContext;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -24,14 +26,18 @@ use Throwable;
  */
 final class JobWorker
 {
-    private readonly RecyclingPolicy $recyclingPolicy;
+    private readonly ?RecyclingPolicy $recyclingPolicyOverride;
     private readonly JobWorkerObserver $observer;
+    private readonly int $maxJobs;
+    private readonly int $memoryLimitBytes;
+    private readonly int $maxUptimeSeconds;
     private JobWorkerState $state = JobWorkerState::Starting;
     private bool $draining = false;
+    private ?JobTransport $activeTransport = null;
 
     public function __construct(
         private readonly JobApplication $app,
-        private readonly JobTransport $transport,
+        private readonly ?JobTransport $transport = null,
         int $maxJobs = 0,
         ?RecyclingPolicy $recyclingPolicy = null,
         int $memoryLimitBytes = 0,
@@ -39,11 +45,10 @@ final class JobWorker
         ?JobWorkerObserver $observer = null,
         private readonly ?EregionWorkloadMetadata $eregionMetadata = null,
     ) {
-        $this->recyclingPolicy = $recyclingPolicy ?? new CompositeRecyclingPolicy(
-            new MaxJobsPolicy($maxJobs),
-            new MemoryLimitPolicy($memoryLimitBytes),
-            new MaxUptimePolicy($maxUptimeSeconds),
-        );
+        $this->recyclingPolicyOverride = $recyclingPolicy;
+        $this->maxJobs = $maxJobs;
+        $this->memoryLimitBytes = $memoryLimitBytes;
+        $this->maxUptimeSeconds = $maxUptimeSeconds;
         $this->observer = $observer ?? new NullJobWorkerObserver();
     }
 
@@ -85,16 +90,29 @@ final class JobWorker
             return new WorkerResult(0, WorkerStopReason::BootstrapFailure);
         }
 
-        $this->observer->onBoot();
+        $container = $this->app->getContainer();
+
+        try {
+            $this->activeTransport = $this->transport ?? $this->resolveTransportFromContainer($container);
+        } catch (Throwable) {
+            $this->state = JobWorkerState::Failed;
+
+            return new WorkerResult(0, WorkerStopReason::BootstrapFailure);
+        }
+
+        $recyclingPolicy = $this->resolveRecyclingPolicy($container);
+        $observer = $this->resolveObserver($container);
+
+        $observer->onBoot();
         $this->installSignalHandlers();
 
-        $container = $this->app->getContainer();
+        $transport = $this->activeTransport;
         $served = 0;
         $this->state = JobWorkerState::Idle;
 
         while (!$this->draining) {
             try {
-                $poll = $this->transport->poll();
+                $poll = $transport->poll();
             } catch (Throwable) {
                 $this->state = JobWorkerState::Failed;
 
@@ -104,19 +122,22 @@ final class JobWorker
             if ($poll->isStop()) {
                 $this->state = JobWorkerState::Stopped;
 
-                return new WorkerResult($served, WorkerStopReason::Stopped);
+                return new WorkerResult(
+                    $served,
+                    $this->draining ? WorkerStopReason::Drained : WorkerStopReason::Stopped,
+                );
             }
 
             if ($poll->isIdle()) {
                 $this->state = JobWorkerState::Idle;
-                $this->observer->onIdle();
+                $observer->onIdle();
                 continue;
             }
 
             /** @var JobEnvelope $job */
             $job = $poll->job;
             $this->state = JobWorkerState::Busy;
-            $this->observer->onJobStarted($job);
+            $observer->onJobStarted($job);
 
             $scopeFailed = false;
             $startedAt = microtime(true);
@@ -130,7 +151,7 @@ final class JobWorker
                     $result = JobResult::retry($e->getMessage() !== '' ? $e->getMessage() : $e::class);
                 }
 
-                $this->applyResult($job, $result);
+                $this->applyResult($transport, $observer, $job, $result);
             } finally {
                 try {
                     $container->endScope();
@@ -140,7 +161,7 @@ final class JobWorker
             }
 
             $duration = microtime(true) - $startedAt;
-            $this->observer->onJobFinished($job, $result, $duration);
+            $observer->onJobFinished($job, $result, $duration);
             $served++;
 
             if ($scopeFailed) {
@@ -151,7 +172,7 @@ final class JobWorker
 
             $memory = memory_get_usage(true);
             $peak = memory_get_peak_usage(true);
-            $decision = $this->recyclingPolicy->evaluate(new WorkerContext(
+            $decision = $recyclingPolicy->evaluate(new WorkerContext(
                 requestsHandled: $served,
                 memoryUsage: $memory,
                 memoryPeak: $peak,
@@ -159,7 +180,7 @@ final class JobWorker
 
             if ($decision->shouldRecycle) {
                 $reason = $decision->reason ?? 'recycle';
-                $this->observer->onRecycle($reason);
+                $observer->onRecycle($reason);
                 $this->state = JobWorkerState::Stopped;
 
                 return new WorkerResult($served, WorkerStopReason::Recycled, $reason);
@@ -177,33 +198,100 @@ final class JobWorker
         return new WorkerResult($served, WorkerStopReason::Drained);
     }
 
-    private function applyResult(JobEnvelope $job, JobResult $result): void
-    {
+    private function applyResult(
+        JobTransport $transport,
+        JobWorkerObserver $observer,
+        JobEnvelope $job,
+        JobResult $result,
+    ): void {
         match ($result->outcome) {
-            JobOutcome::Ack => $this->transport->ack($job),
-            JobOutcome::Retry => $this->notifyRetry($job, $result),
-            JobOutcome::Reject => $this->notifyReject($job, $result),
+            JobOutcome::Ack => $transport->ack($job),
+            JobOutcome::Retry => $this->notifyRetry($transport, $observer, $job, $result),
+            JobOutcome::Reject => $this->notifyReject($transport, $observer, $job, $result),
         };
     }
 
-    private function notifyRetry(JobEnvelope $job, JobResult $result): void
-    {
-        $this->transport->retry($job, $result);
-        $this->observer->onRetry($job);
+    private function notifyRetry(
+        JobTransport $transport,
+        JobWorkerObserver $observer,
+        JobEnvelope $job,
+        JobResult $result,
+    ): void {
+        $transport->retry($job, $result);
+        $observer->onRetry($job);
     }
 
-    private function notifyReject(JobEnvelope $job, JobResult $result): void
+    private function notifyReject(
+        JobTransport $transport,
+        JobWorkerObserver $observer,
+        JobEnvelope $job,
+        JobResult $result,
+    ): void {
+        $transport->reject($job, $result);
+        $observer->onReject($job);
+    }
+
+    private function resolveTransportFromContainer(Container $container): JobTransport
     {
-        $this->transport->reject($job, $result);
-        $this->observer->onReject($job);
+        if (!$container->has(JobTransport::class)) {
+            throw new RuntimeException(
+                'JobTransport is not bound in the container. Bind ' . JobTransport::class . ' after boot.'
+            );
+        }
+
+        $transport = $container->get(JobTransport::class);
+        if (!$transport instanceof JobTransport) {
+            throw new RuntimeException(
+                'Container binding for JobTransport must resolve to ' . JobTransport::class
+            );
+        }
+
+        return $transport;
+    }
+
+    private function resolveRecyclingPolicy(Container $container): RecyclingPolicy
+    {
+        if ($this->recyclingPolicyOverride !== null) {
+            return $this->recyclingPolicyOverride;
+        }
+
+        if ($container->has(RecyclingPolicy::class)) {
+            $bound = $container->get(RecyclingPolicy::class);
+            if ($bound instanceof RecyclingPolicy) {
+                return $bound;
+            }
+        }
+
+        return new CompositeRecyclingPolicy(
+            new MaxJobsPolicy($this->maxJobs),
+            new MemoryLimitPolicy($this->memoryLimitBytes),
+            new MaxUptimePolicy($this->maxUptimeSeconds),
+        );
+    }
+
+    private function resolveObserver(Container $container): JobWorkerObserver
+    {
+        if (!$this->observer instanceof NullJobWorkerObserver) {
+            return $this->observer;
+        }
+
+        if ($container->has(JobWorkerObserver::class)) {
+            $bound = $container->get(JobWorkerObserver::class);
+            if ($bound instanceof JobWorkerObserver) {
+                return $bound;
+            }
+        }
+
+        return $this->observer;
     }
 
     private function requestDrain(): void
     {
         $this->draining = true;
         $this->state = JobWorkerState::Draining;
-        if ($this->transport instanceof InterruptibleJobTransport) {
-            $this->transport->stop();
+        $transport = $this->activeTransport ?? $this->transport;
+        if ($transport instanceof InterruptibleJobTransport) {
+            $transport->stop();
         }
     }
 

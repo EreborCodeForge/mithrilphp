@@ -295,6 +295,19 @@ final class JobWorkerTest extends TestCase
         $this->assertTrue($transport->stopped);
     }
 
+    public function testInterruptibleStopDuringDrainReturnsDrained(): void
+    {
+        $transport = new StopOnDrainTransport();
+        $app = new FakeJobApp(fn () => JobResult::ack());
+        $worker = new JobWorker($app, $transport);
+        $transport->worker = $worker;
+
+        $result = $worker->runResult();
+
+        $this->assertSame(0, $result->requestsHandled);
+        $this->assertSame(WorkerStopReason::Drained, $result->stopReason);
+    }
+
     public function testDrainViaPublicSignalPath(): void
     {
         $transport = new DrainOnIdleTransport();
@@ -589,6 +602,37 @@ final class FailingPollTransport implements JobTransport
     public function poll(): JobPollResult
     {
         throw new RuntimeException('broker down');
+    }
+
+    public function ack(JobEnvelope $job): void {}
+
+    public function retry(JobEnvelope $job, JobResult $result): void {}
+
+    public function reject(JobEnvelope $job, JobResult $result): void {}
+}
+
+/**
+ * Simulates SIGTERM during a blocking poll: drain then poll returns stop.
+ */
+final class StopOnDrainTransport implements InterruptibleJobTransport
+{
+    public ?JobWorker $worker = null;
+    private bool $stopped = false;
+
+    public function poll(): JobPollResult
+    {
+        if ($this->stopped) {
+            return JobPollResult::stop();
+        }
+
+        $this->worker?->drain();
+
+        return JobPollResult::stop();
+    }
+
+    public function stop(): void
+    {
+        $this->stopped = true;
     }
 
     public function ack(JobEnvelope $job): void {}

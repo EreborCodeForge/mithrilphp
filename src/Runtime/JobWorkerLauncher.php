@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace Erebor\Mithril\Runtime;
 
 use Erebor\Mithril\Contracts\JobApplication;
-use Erebor\Mithril\Jobs\JobTransport;
-use Erebor\Mithril\Runtime\Recycling\RecyclingPolicy;
 use InvalidArgumentException;
-use RuntimeException;
 use Throwable;
 
 /**
- * Boots a JobApplication, resolves JobTransport from the container, runs JobWorker.
+ * Resolves a JobApplication from argv and runs JobWorker (single boot inside the worker loop).
  */
 final class JobWorkerLauncher
 {
@@ -44,49 +41,14 @@ final class JobWorkerLauncher
             if (!$app instanceof JobApplication) {
                 throw new InvalidArgumentException("Job kernel must implement JobApplication: {$class}");
             }
-
-            $app->boot();
-
-            $container = $app->getContainer();
-            if (!$container->has(JobTransport::class)) {
-                throw new RuntimeException(
-                    'JobTransport is not bound in the container. Bind ' . JobTransport::class . ' after boot.'
-                );
-            }
-
-            $transport = $container->get(JobTransport::class);
-            if (!$transport instanceof JobTransport) {
-                throw new RuntimeException(
-                    'Container binding for JobTransport must resolve to ' . JobTransport::class
-                );
-            }
         } catch (Throwable) {
             return new WorkerResult(0, WorkerStopReason::BootstrapFailure);
-        }
-
-        $recyclingPolicy = null;
-        if ($container->has(RecyclingPolicy::class)) {
-            $bound = $container->get(RecyclingPolicy::class);
-            if ($bound instanceof RecyclingPolicy) {
-                $recyclingPolicy = $bound;
-            }
-        }
-
-        $observer = null;
-        if ($container->has(JobWorkerObserver::class)) {
-            $bound = $container->get(JobWorkerObserver::class);
-            if ($bound instanceof JobWorkerObserver) {
-                $observer = $bound;
-            }
         }
 
         $metadata = EregionWorkloadMetadata::fromEnvironment();
 
         return (new JobWorker(
             app: $app,
-            transport: $transport,
-            recyclingPolicy: $recyclingPolicy,
-            observer: $observer,
             eregionMetadata: $metadata->isPresent() ? $metadata : null,
         ))->runResult();
     }

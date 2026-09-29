@@ -85,11 +85,11 @@ final class SmokeJobKernel implements JobApplication
 
     public function boot(): void
     {
+        self::$bootCount++;
         if ($this->booted) {
-            return;
+            throw new \RuntimeException('JobApplication::boot() must run exactly once');
         }
         $this->booted = true;
-        self::$bootCount++;
 
         $transport = new InMemoryJobTransport([
             new JobEnvelope('j1', 'one', null),

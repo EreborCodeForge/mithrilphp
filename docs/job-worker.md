@@ -7,15 +7,20 @@ This path is parallel to the HTTP [`Worker`](runtime-worker.md). It does **not**
 ## Flow
 
 ```text
-app.boot() once
-  └─ loop:
-       poll = transport.poll()
-         idle  → stay alive (onIdle)
-         stop  → exit Stopped
-         job   → beginScope → handle → ack|retry|reject → endScope
-       recycle policies (max_jobs / memory / max_uptime)
-       SIGTERM/SIGINT → drain (finish current job, no new poll) → Drained
+resolve kernel → instantiate JobApplication
+  └─ JobWorker.runResult():
+       app.boot() exactly once
+       resolve JobTransport (and optional container bindings) from the container
+       loop:
+         poll = transport.poll()
+           idle  → stay alive (onIdle); does not stop the worker
+           stop  → Stopped when not draining; Drained when drain/SIGTERM/SIGINT caused the stop
+           job   → beginScope → handle → ack|retry|reject → endScope
+         recycle policies (max_jobs / memory / max_uptime) → Recycled
+         drain → finish current job, no new polls → Drained
 ```
+
+`JobWorkerLauncher` does **not** call `boot()`; only `JobWorker` owns application bootstrap.
 
 ## Contracts
 
@@ -33,9 +38,19 @@ app.boot() once
 
 Brokers (Redis, SQS, Rabbit, DB poll) live in app adapters. Mithril ships `InMemoryJobTransport` and `InMemoryJobDispatcher` for tests and demos.
 
-### Idle vs stop
+### Idle vs stop vs drain
 
-Temporary absence of messages must return `JobPollResult::idle()`, not stop. Only an explicit stop (or interrupt after drain) ends the process. `InMemoryJobTransport` defaults to stop-when-empty for finite tests; pass `idleWhenEmpty: true` for a persistent consumer.
+Temporary absence of messages must return `JobPollResult::idle()`, not stop. Idle never ends the worker by itself.
+
+| End condition | `WorkerStopReason` |
+|---------------|-------------------|
+| `poll()` returns stop without an active drain | `Stopped` |
+| SIGTERM/SIGINT, `drain()`, or interrupt after drain | `Drained` |
+| Recycling policy (`max_jobs`, memory, `max_uptime`) | `Recycled` |
+
+During drain, the current job runs to completion (ack/retry/reject as usual); the worker does not poll for new work afterward.
+
+`InMemoryJobTransport` defaults to stop-when-empty for finite tests; pass `idleWhenEmpty: true` for a persistent consumer.
 
 Legacy transports that still expose `next(): ?JobEnvelope` can be wrapped with `LegacyJobTransportAdapter` (`null` → `stop()`).
 
@@ -93,7 +108,7 @@ php vendor/bin/job-worker
 php vendor/bin/job-worker --kernel=App\\JobKernel
 ```
 
-After boot, the launcher requires `JobTransport` in the container. Missing binding → exit code `20` (`BootstrapFailure`).
+The worker boots the application once, then requires `JobTransport` in the container. Missing or invalid binding → exit code `20` (`BootstrapFailure`).
 
 Optional container bindings:
 
@@ -123,8 +138,8 @@ Reuses `WorkerExitCode`:
 
 | Code | Meaning |
 |------|---------|
-| `0` | Normal stop, drain (SIGTERM), or remote shutdown |
-| `10` | Planned recycle (`max_jobs` / memory / `max_uptime`) |
+| `0` | Normal stop (`Stopped`), graceful drain (`Drained`), or remote shutdown |
+| `10` | Planned recycle (`Recycled`: `max_jobs` / memory / `max_uptime`) |
 | `20` | Bootstrap failure (kernel / transport) |
 | `21` | Transport failure |
 | `22` | Scope cleanup failure |
