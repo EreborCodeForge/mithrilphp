@@ -10,13 +10,16 @@ use Erebor\Mithril\Http\Response;
 /**
  * Queue-based bridge for tests and in-process multi-request benchmarks.
  */
-final class InMemoryBridge implements RequestBridge
+final class InMemoryBridge implements WorkerMetadataAwareBridge
 {
     /** @var list<Request> */
     private array $queue;
 
     /** @var list<Response> */
     private array $responses = [];
+
+    /** @var list<WorkerMetadata> */
+    private array $metadata = [];
 
     /**
      * @param list<Request> $requests
@@ -40,9 +43,12 @@ final class InMemoryBridge implements RequestBridge
         return array_shift($this->queue);
     }
 
-    public function respond(Response $response): void
+    public function respond(Response $response, ?WorkerMetadata $metadata = null): void
     {
         $this->responses[] = $response;
+        if ($metadata !== null) {
+            $this->metadata[] = $metadata;
+        }
     }
 
     /**
@@ -51,5 +57,13 @@ final class InMemoryBridge implements RequestBridge
     public function responses(): array
     {
         return $this->responses;
+    }
+
+    /**
+     * @return list<WorkerMetadata>
+     */
+    public function metadata(): array
+    {
+        return $this->metadata;
     }
 }

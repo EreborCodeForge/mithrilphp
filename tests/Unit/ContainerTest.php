@@ -118,7 +118,9 @@ class ContainerTest extends TestCase
         $instance1 = $container->get('scoped_service');
         $instance2 = $container->get('scoped_service');
         $this->assertSame($instance1, $instance2);
+        $this->assertSame(1, $container->scopedInstanceCount());
         $container->endScope();
+        $this->assertSame(0, $container->scopedInstanceCount());
 
         // Second scope
         $container->beginScope();

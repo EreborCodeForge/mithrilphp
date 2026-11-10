@@ -117,6 +117,16 @@ Full guide: [docs/runtime-worker.md](docs/runtime-worker.md)
 
 ---
 
+## WorkerGuard
+
+WorkerGuard is opt-in and **off by default**. It checks the scoped registry and static properties the application registers explicitly. It does not prove that arbitrary PHP state, extensions, or native memory were cleared.
+
+`observe` records findings and does not recycle. `enforce` can ask for a planned recycle only when `recycle_on_verified_state_violation` is set and the finding is `critical` / `verified`. A memory trend is a suspicion, not a recycle. Audit runs from Durin (`durin worker:audit`) and is rejected on the HTTP worker.
+
+Details, limits, and the benchmark: [docs/worker-guard.md](docs/worker-guard.md). Decision record: [docs/adr/0001-worker-guard.md](docs/adr/0001-worker-guard.md).
+
+---
+
 ## Job Worker
 
 Apps that process **jobs / queues / schedules** (Durin preset `worker`) need a warm loop without Eregion or HTTP bridges.

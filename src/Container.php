@@ -252,6 +252,14 @@ final class Container
         $this->scopedInstances = [];
     }
 
+    /**
+     * Read-only size of the scoped registry. Does not expose instances.
+     */
+    public function scopedInstanceCount(): int
+    {
+        return count($this->scopedInstances);
+    }
+
     public function resetWorker(): void
     {
         $this->scopedInstances = [];

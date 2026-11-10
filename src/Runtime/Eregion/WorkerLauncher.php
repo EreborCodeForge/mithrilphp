@@ -9,6 +9,8 @@ use Erebor\Mithril\Runtime\Eregion\Exceptions\ProtocolException;
 use Erebor\Mithril\Runtime\Recycling\CompositeRecyclingPolicy;
 use Erebor\Mithril\Runtime\Recycling\MaxRequestsPolicy;
 use Erebor\Mithril\Runtime\Recycling\MemoryLimitPolicy;
+use Erebor\Mithril\Runtime\Guard\GuardConfig;
+use Erebor\Mithril\Runtime\Guard\WorkerGuardFactory;
 use Erebor\Mithril\Runtime\Worker;
 use Erebor\Mithril\Runtime\WorkerResult;
 use Erebor\Mithril\Runtime\WorkerStopReason;
@@ -63,12 +65,17 @@ final class WorkerLauncher
                 new MemoryLimitPolicy($memoryLimitBytes),
             );
 
+            $guardConfig = GuardConfig::httpWorker(
+                $manifest->workingDirectory !== '' ? $manifest->workingDirectory : (getcwd() ?: ''),
+            );
+
             $worker = new Worker(
                 app: $app,
                 bridge: $bridge,
                 maxRequests: $maxRequests,
                 recyclingPolicy: $policy,
                 memoryLimitBytes: $memoryLimitBytes,
+                guard: WorkerGuardFactory::fromConfig($guardConfig),
             );
 
             try {

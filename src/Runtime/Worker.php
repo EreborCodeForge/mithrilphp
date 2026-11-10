@@ -7,6 +7,12 @@ namespace Erebor\Mithril\Runtime;
 use Erebor\Mithril\Contracts\HttpApplication;
 use Erebor\Mithril\Http\Response;
 use Erebor\Mithril\Runtime\Eregion\Exceptions\ProtocolException;
+use Erebor\Mithril\Runtime\Guard\GuardCycleContext;
+use Erebor\Mithril\Runtime\Guard\GuardDecision;
+use Erebor\Mithril\Runtime\Guard\NullWorkerGuard;
+use Erebor\Mithril\Runtime\Guard\Policy\RecyclingCombiner;
+use Erebor\Mithril\Runtime\Guard\ProbeWorkerGuard;
+use Erebor\Mithril\Runtime\Guard\WorkerGuard;
 use Erebor\Mithril\Runtime\Recycling\CompositeRecyclingPolicy;
 use Erebor\Mithril\Runtime\Recycling\MaxRequestsPolicy;
 use Erebor\Mithril\Runtime\Recycling\RecyclingPolicy;
@@ -21,17 +27,21 @@ final class Worker
 {
     private readonly RecyclingPolicy $recyclingPolicy;
 
+    private readonly WorkerGuard $guard;
+
     public function __construct(
         private readonly HttpApplication $app,
         private readonly RequestBridge $bridge,
         private readonly int $maxRequests = 0,
         ?RecyclingPolicy $recyclingPolicy = null,
         private readonly int $memoryLimitBytes = 0,
+        ?WorkerGuard $guard = null,
     ) {
         $this->recyclingPolicy = $recyclingPolicy ?? new CompositeRecyclingPolicy(
             new MaxRequestsPolicy($maxRequests),
             new \Erebor\Mithril\Runtime\Recycling\MemoryLimitPolicy($memoryLimitBytes),
         );
+        $this->guard = $guard ?? new NullWorkerGuard();
     }
 
     /**
@@ -51,9 +61,15 @@ final class Worker
         }
 
         $container = $this->app->getContainer();
+        if ($this->guard instanceof ProbeWorkerGuard) {
+            $this->guard->attachContainer($container);
+        }
+
         $served = 0;
         $stopReason = WorkerStopReason::Stopped;
         $recycleReason = null;
+        $generation = $this->workerGeneration();
+        $combiner = new RecyclingCombiner();
 
         while (true) {
             try {
@@ -73,10 +89,27 @@ final class Worker
 
             $response = null;
             $scopeFailed = false;
+            $beforeOk = false;
+            $cycle = null;
 
             $container->beginScope();
             try {
                 try {
+                    if ($this->guard->enabled()) {
+                        $cycle = new GuardCycleContext(
+                            workerGeneration: $generation,
+                            requestOrdinal: $served + 1,
+                            mode: $this->guard->mode(),
+                            correlationId: 'c' . ($served + 1),
+                            monotonicNs: hrtime(true),
+                        );
+                        try {
+                            $this->guard->before($cycle);
+                            $beforeOk = true;
+                        } catch (Throwable) {
+                            $beforeOk = false;
+                        }
+                    }
                     $response = $this->app->handle($request);
                 } catch (Throwable) {
                     $response = Response::json(['error' => 'Internal Server Error'], 500);
@@ -89,6 +122,19 @@ final class Worker
                 }
             }
 
+            $guardDecision = GuardDecision::none();
+            if ($this->guard->enabled() && $cycle !== null) {
+                if (!$beforeOk) {
+                    $cycle = $cycle->withIncompleteCollection();
+                }
+                try {
+                    $guardDecision = $this->guard->after($cycle);
+                } catch (Throwable) {
+                    $guardDecision = GuardDecision::none();
+                }
+            }
+            $cycle = null;
+
             $served++;
             $memory = memory_get_usage(true);
             $peak = memory_get_peak_usage(true);
@@ -99,8 +145,9 @@ final class Worker
                 memoryPeak: $peak,
             ));
 
-            $shouldRecycle = $decision->shouldRecycle || $scopeFailed;
-            $reason = $scopeFailed ? 'scope_cleanup_failure' : $decision->reason;
+            $combined = $combiner->combine($decision, $guardDecision, $scopeFailed);
+            $shouldRecycle = $combined->shouldRecycle;
+            $reason = $combined->reason;
 
             $metadata = new WorkerMetadata(
                 requestsHandled: $served,
@@ -132,5 +179,15 @@ final class Worker
         }
 
         return new WorkerResult($served, $stopReason, $recycleReason);
+    }
+
+    private function workerGeneration(): int
+    {
+        $raw = EregionWorkloadMetadata::fromEnvironment()->generation;
+        if ($raw === null || preg_match('/^\d+$/', $raw) !== 1) {
+            return 0;
+        }
+
+        return (int) $raw;
     }
 }
