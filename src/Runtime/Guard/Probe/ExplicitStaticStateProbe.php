@@ -25,6 +25,9 @@ final class ExplicitStaticStateProbe implements GuardProbe
     /** @var array<int, ReflectionProperty> */
     private array $properties = [];
 
+    /** @var array<int, true> */
+    private array $unavailable = [];
+
     private bool $partial = false;
 
     /**
@@ -39,6 +42,26 @@ final class ExplicitStaticStateProbe implements GuardProbe
     public function id(): string
     {
         return 'static_watchpoints';
+    }
+
+    public function sampleable(): bool
+    {
+        return false;
+    }
+
+    public function prepare(): void
+    {
+        foreach ($this->watchpoints as $index => $watchpoint) {
+            if ($watchpoint->lifetime !== 'request') {
+                continue;
+            }
+            try {
+                $this->properties[$index] = $this->resolve($watchpoint);
+            } catch (\Throwable) {
+                $this->partial = true;
+                $this->unavailable[$index] = true;
+            }
+        }
     }
 
     public function before(GuardCycleContext $context): void
@@ -57,10 +80,23 @@ final class ExplicitStaticStateProbe implements GuardProbe
         }
 
         $current = $this->fingerprints();
+        $verified = false;
+        $observed = false;
         foreach ($this->baseline as $index => $expected) {
-            if (($current[$index] ?? null) !== $expected) {
-                return [GuardFinding::stateRetained($this->id())];
+            if (($current[$index] ?? null) === $expected) {
+                continue;
             }
+            if (str_starts_with($expected, 'nonscalar:')) {
+                $observed = true;
+                continue;
+            }
+            $verified = true;
+        }
+        if ($verified) {
+            return [GuardFinding::stateRetained($this->id())];
+        }
+        if ($observed) {
+            return [GuardFinding::stateObserved($this->id())];
         }
 
         return [];
@@ -98,6 +134,10 @@ final class ExplicitStaticStateProbe implements GuardProbe
             if ($watchpoint->lifetime !== 'request') {
                 continue;
             }
+            if (isset($this->unavailable[$index])) {
+                $out[$index] = 'unavailable';
+                continue;
+            }
             $out[$index] = $this->fingerprint($watchpoint, $index);
         }
 
@@ -124,6 +164,11 @@ final class ExplicitStaticStateProbe implements GuardProbe
             return $this->properties[$index];
         }
 
+        return $this->properties[$index] = $this->resolve($watchpoint);
+    }
+
+    private function resolve(StaticWatchpoint $watchpoint): ReflectionProperty
+    {
         if (!class_exists($watchpoint->class)) {
             throw new \RuntimeException('watchpoint unavailable');
         }
@@ -138,7 +183,7 @@ final class ExplicitStaticStateProbe implements GuardProbe
             throw new \RuntimeException('watchpoint unavailable');
         }
 
-        return $this->properties[$index] = $property;
+        return $property;
     }
 
     private function canonical(mixed $value): string

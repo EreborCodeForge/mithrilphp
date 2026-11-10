@@ -40,7 +40,7 @@ A ordem da spec que coloca o Guard acima de `max_requests` é classificação de
 
 ## Tempestade de reciclagem
 
-Não há supressor que ignore `Recycle=true`. Isso deixaria um worker contaminado em serviço. O controle é o opt-in de `enforce` e o `MinReady`/restart que o Eregion já tem.
+`guard_state_violation` não volta o worker para `idle`. O Eregion limita os boots seguintes dessa reason com `worker_guard_recycle_safety` (default ligado: 3 eventos em 30s, cooldown de 60s, uma prova em half-open). Desligar a chave restaura o restart ilimitado. Isso não substitui `MinReady` nem bloqueia reciclagem por memória, max requests ou crash. Ver ADR 0002.
 
 ## Cardinalidade
 

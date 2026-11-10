@@ -80,6 +80,15 @@ final class MemoryTrendProbe implements GuardProbe
         return $this->sampledOnce ? 'covered' : 'skipped';
     }
 
+    public function sampleable(): bool
+    {
+        return true;
+    }
+
+    public function prepare(): void
+    {
+    }
+
     /**
      * @return array{usage: int, real: int, peak: int}
      */

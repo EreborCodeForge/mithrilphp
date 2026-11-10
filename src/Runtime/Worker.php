@@ -29,6 +29,8 @@ final class Worker
 
     private readonly WorkerGuard $guard;
 
+    private readonly bool $guardActive;
+
     public function __construct(
         private readonly HttpApplication $app,
         private readonly RequestBridge $bridge,
@@ -42,6 +44,7 @@ final class Worker
             new \Erebor\Mithril\Runtime\Recycling\MemoryLimitPolicy($memoryLimitBytes),
         );
         $this->guard = $guard ?? new NullWorkerGuard();
+        $this->guardActive = $this->guard->enabled();
     }
 
     /**
@@ -63,6 +66,7 @@ final class Worker
         $container = $this->app->getContainer();
         if ($this->guard instanceof ProbeWorkerGuard) {
             $this->guard->attachContainer($container);
+            $this->guard->prepare();
         }
 
         $served = 0;
@@ -95,7 +99,7 @@ final class Worker
             $container->beginScope();
             try {
                 try {
-                    if ($this->guard->enabled()) {
+                    if ($this->guardActive) {
                         $cycle = new GuardCycleContext(
                             workerGeneration: $generation,
                             requestOrdinal: $served + 1,
@@ -123,7 +127,7 @@ final class Worker
             }
 
             $guardDecision = GuardDecision::none();
-            if ($this->guard->enabled() && $cycle !== null) {
+            if ($this->guardActive && $cycle !== null) {
                 if (!$beforeOk) {
                     $cycle = $cycle->withIncompleteCollection();
                 }

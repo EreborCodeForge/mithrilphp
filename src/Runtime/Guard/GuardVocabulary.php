@@ -22,6 +22,8 @@ final class GuardVocabulary
 
     public const SUMMARY_STATE = 'A watched request-scoped static property differs from baseline after cleanup';
 
+    public const SUMMARY_STATE_OBSERVED = 'A non-scalar watchpoint type changed; this is not a verified reset violation';
+
     public const SUMMARY_SCOPE = 'Scoped container registry was not empty after endScope';
 
     public const SUMMARY_PROBE = 'A guard probe failed and was skipped';
@@ -57,6 +59,7 @@ final class GuardVocabulary
     public static function isSummary(string $summary): bool
     {
         return $summary === self::SUMMARY_STATE
+            || $summary === self::SUMMARY_STATE_OBSERVED
             || $summary === self::SUMMARY_SCOPE
             || $summary === self::SUMMARY_PROBE
             || $summary === self::SUMMARY_INCOMPLETE

@@ -419,6 +419,15 @@ final class BoomProbe implements GuardProbe
     {
         return 'covered';
     }
+
+    public function sampleable(): bool
+    {
+        return false;
+    }
+
+    public function prepare(): void
+    {
+    }
 }
 
 final class GuardFixtureApp implements HttpApplication

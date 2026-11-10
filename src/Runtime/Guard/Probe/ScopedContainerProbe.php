@@ -54,4 +54,13 @@ final class ScopedContainerProbe implements GuardProbe
     {
         return $this->coverage;
     }
+
+    public function sampleable(): bool
+    {
+        return false;
+    }
+
+    public function prepare(): void
+    {
+    }
 }

@@ -1,0 +1,153 @@
+{
+    "host": "WINNT AMD64",
+    "php": "8.5.10",
+    "note": "In-process Worker plus InMemoryBridge. This does not include Eregion or a network hop.",
+    "rounds": 5,
+    "requests_per_round": 2000,
+    "median_rps": {
+        "off": 125494.1,
+        "observe": 55749.1
+    },
+    "observe_throughput_drop_percent": 55.58,
+    "last_observe_stats": {
+        "probe_ok": 12000,
+        "probe_error": 0,
+        "hook_duration_ns": 12421300
+    },
+    "samples": {
+        "off": [
+            {
+                "label": "off",
+                "requests": 2000,
+                "elapsed_ms": 18.821,
+                "rps": 106266,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 0,
+                    "probe_error": 0,
+                    "hook_duration_ns": 0
+                }
+            },
+            {
+                "label": "off",
+                "requests": 2000,
+                "elapsed_ms": 15.905,
+                "rps": 125743.5,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 0,
+                    "probe_error": 0,
+                    "hook_duration_ns": 0
+                }
+            },
+            {
+                "label": "off",
+                "requests": 2000,
+                "elapsed_ms": 16.143,
+                "rps": 123894.2,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 0,
+                    "probe_error": 0,
+                    "hook_duration_ns": 0
+                }
+            },
+            {
+                "label": "off",
+                "requests": 2000,
+                "elapsed_ms": 15.471,
+                "rps": 129277.5,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 0,
+                    "probe_error": 0,
+                    "hook_duration_ns": 0
+                }
+            },
+            {
+                "label": "off",
+                "requests": 2000,
+                "elapsed_ms": 15.937,
+                "rps": 125494.1,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 0,
+                    "probe_error": 0,
+                    "hook_duration_ns": 0
+                }
+            }
+        ],
+        "observe": [
+            {
+                "label": "observe",
+                "requests": 2000,
+                "elapsed_ms": 40.938,
+                "rps": 48855,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 12000,
+                    "probe_error": 0,
+                    "hook_duration_ns": 14306100
+                }
+            },
+            {
+                "label": "observe",
+                "requests": 2000,
+                "elapsed_ms": 36.725,
+                "rps": 54458.7,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 12000,
+                    "probe_error": 0,
+                    "hook_duration_ns": 12869500
+                }
+            },
+            {
+                "label": "observe",
+                "requests": 2000,
+                "elapsed_ms": 34.565,
+                "rps": 57862.2,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 12000,
+                    "probe_error": 0,
+                    "hook_duration_ns": 12263900
+                }
+            },
+            {
+                "label": "observe",
+                "requests": 2000,
+                "elapsed_ms": 34.925,
+                "rps": 57265.7,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 12000,
+                    "probe_error": 0,
+                    "hook_duration_ns": 12216700
+                }
+            },
+            {
+                "label": "observe",
+                "requests": 2000,
+                "elapsed_ms": 35.875,
+                "rps": 55749.1,
+                "memory_real_after": 6291456,
+                "memory_delta": 0,
+                "stats": {
+                    "probe_ok": 12000,
+                    "probe_error": 0,
+                    "hook_duration_ns": 12421300
+                }
+            }
+        ]
+    }
+}

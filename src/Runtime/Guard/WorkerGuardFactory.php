@@ -24,8 +24,9 @@ final class WorkerGuardFactory
         if ($config->enableStaticProbe) {
             $probes[] = new ExplicitStaticStateProbe($config->watchpoints);
         }
+        $sampleEvery = $config->mode === GuardMode::Audit ? 1 : $config->sampleEveryNRequests;
         if ($config->enableMemoryProbe) {
-            $probes[] = new MemoryTrendProbe($config->sampleEveryNRequests);
+            $probes[] = new MemoryTrendProbe($sampleEvery);
         }
 
         return new ProbeWorkerGuard(
@@ -33,6 +34,7 @@ final class WorkerGuardFactory
             $probes,
             new GuardPolicy($config->recycleOnVerifiedStateViolation),
             $config->maxProbesPerCycle,
+            $sampleEvery,
         );
     }
 }

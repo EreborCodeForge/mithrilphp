@@ -6,6 +6,7 @@ namespace Erebor\Mithril\Runtime\Guard;
 
 final readonly class GuardConfig
 {
+    public const HTTP_DISABLED_DIAGNOSTIC = 'WorkerGuard invalid configuration; guard disabled for this worker. Run `durin doctor --strict`';
     /**
      * @param list<StaticWatchpoint> $watchpoints
      */
@@ -19,6 +20,7 @@ final readonly class GuardConfig
         public bool $enableScopedProbe = true,
         public bool $enableStaticProbe = true,
         public bool $enableMemoryProbe = true,
+        public ?string $bootDiagnostic = null,
     ) {}
 
     public static function off(): self
@@ -96,10 +98,24 @@ final readonly class GuardConfig
     public static function httpWorker(string $workingDirectory): self
     {
         $path = rtrim($workingDirectory, '/\\') . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'worker_guard.php';
+        if (!is_file($path)) {
+            return self::off();
+        }
+
         try {
             return self::loadFile($path, true);
         } catch (GuardConfigException) {
-            return self::off();
+            $off = self::off();
+
+            return new self(
+                $off->mode,
+                $off->maxProbesPerCycle,
+                $off->sampleEveryNRequests,
+                $off->reportPath,
+                $off->recycleOnVerifiedStateViolation,
+                $off->watchpoints,
+                bootDiagnostic: self::HTTP_DISABLED_DIAGNOSTIC,
+            );
         }
     }
 

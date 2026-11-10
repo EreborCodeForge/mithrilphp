@@ -19,4 +19,15 @@ interface GuardProbe
      * covered, partial, skipped or not_configured.
      */
     public function coverage(): string;
+
+    /**
+     * Sampleable probes cannot produce a recycle verdict.
+     * Enforce and audit ignore this flag and still run probes that are not sampleable.
+     */
+    public function sampleable(): bool;
+
+    /**
+     * Resolve reflection and other stable metadata once, after the application boots.
+     */
+    public function prepare(): void;
 }

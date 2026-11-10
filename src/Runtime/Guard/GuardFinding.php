@@ -28,6 +28,18 @@ final readonly class GuardFinding
         );
     }
 
+    public static function stateObserved(string $probeId): self
+    {
+        return new self(
+            GuardVocabulary::STATE_RETAINED,
+            $probeId,
+            FindingSeverity::Warning,
+            FindingConfidence::Observed,
+            GuardVocabulary::SUMMARY_STATE_OBSERVED,
+            GuardVocabulary::RECOMMEND_STATE,
+        );
+    }
+
     public static function scopeRetained(): self
     {
         return new self(
