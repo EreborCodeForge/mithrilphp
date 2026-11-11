@@ -63,5 +63,5 @@ Números, hardware e o que não atingiu a meta estão em `docs/worker-guard-v1.1
 ## Pendências
 
 - `ResourceProbe`, `durin worker:inspect` e hook de `JobWorker` ficaram de fora.
-- O pacote publicado do Forge ainda depende de `mithrilphp` ^3.0. A suíte local carrega `../mithrilphp` quando esse diretório existe. Sem uma tag nova, a instalação limpa não vê esta V1.1.
-- `go test -race ./...` não rodou nesta máquina: o Go pediu cgo e não há `gcc` no PATH. Isso não conta como PASS.
+- O requisito WG11-P02 continua p50 ≤ 3 µs. O baseline observado do hook `observe_light` é 5,3 µs e não substitui esse requisito. Números e metodologia: `docs/worker-guard-v1.1-benchmark.md`.
+- `go test -race ./...` não rodou nesta máquina Windows: o Go pediu cgo e não há `gcc` no PATH.

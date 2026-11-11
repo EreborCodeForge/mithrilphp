@@ -54,7 +54,15 @@
 | WG11-O01 | Telemetria sem PII | Contadores/latências/logs sanitizados e label cardinality bounded; nenhuma propriedade estática ou hash bruto em relatório |
 | WG11-Q01 | Não regressão | Todas as suítes existentes passam; novos testes de concorrência, timeouts, guard-off e integração; race tests quando ambiente permitir |
 
-**Natureza dos limites:** 2%, 3 µs e 5% são **metas de engenharia sugeridas**, não fatos de performance. Registrar hardware, versão PHP/Go, jit/opcache, parâmetros e variabilidade; ao não atingir, abrir finding de performance e não declarar atingido. Não mascarar o microbenchmark vazio com uma média de endpoint lento.
+**Natureza dos limites:** 2%, 3 µs e 5% são **metas de engenharia sugeridas**, não fatos de performance. Registrar hardware, versão PHP/Go, jit/opcache, parâmetros e variabilidade; ao não atingir, abrir finding de performance e não declarar atingido. Não mascarar o microbenchmark vazio com uma média de endpoint lento. Um baseline observado não substitui o número da tabela.
+
+### 1.1 Finding WG11-P02 — 2026-11-10
+
+O critério permanece **p50 ≤ 3 µs** para a configuração leve de referência. Ele **não foi atingido** e não foi rebaixado.
+
+Baseline observado do hook `observe_light`, no mesmo host e no mesmo runner da faixa de 8441 ns (Windows 10, PHP 8.5.10, 100.000 requests, 10 rodadas, nenhuma descartada): **5,3 µs** (p50 5326 ns, faixa 5194–6123 ns, `bench/results/hook-opt.json`). A repetição `bench/results/hook-opt-recheck.json` ficou em p50 5374 ns (5125–6527 ns). Ela confirma o baseline; não cria outro requisito. A faixa anterior a estas duas alterações era 7336–9136 ns.
+
+O menor número compatível com a cobertura atual — probes isolados mais os dois pares de `hrtime` — é cerca de 2,7 µs. O hook medido ainda carrega cerca de 2,6 µs de laço, `try`/`finally` e ciclo sem finding. Chegar a 3 µs sem cortar scoped, memória, os relógios do hook ou a leitura do watchpoint não ocorreu. Metodologia, pares HTTP e o que continua aberto estão em `docs/worker-guard-v1.1-benchmark.md`.
 
 ---
 

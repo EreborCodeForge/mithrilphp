@@ -1,0 +1,1353 @@
+{
+    "label": "hook-opt-recheck",
+    "generated_at": "2026-11-11T01:53:56+00:00",
+    "environment": {
+        "php": "8.5.10",
+        "os": "Windows 10.0 AMD64",
+        "sapi": "cli",
+        "opcache_loaded": true,
+        "opcache_enable": "1",
+        "opcache_enable_cli": "0",
+        "jit": "disable",
+        "memory_limit": "128M",
+        "cpu_time": "getrusage"
+    },
+    "command": "php bench/worker_guard_bench.php --requests=100000 --rounds=10 --label=hook-opt-recheck",
+    "requests_per_round": 100000,
+    "rounds": 10,
+    "order": "seeded shuffle per round (mt_srand(1000+round)); no rounds dropped",
+    "includes_eregion": false,
+    "eregion_http": {
+        "status": "N/A",
+        "reason": "This process is the in-process Mithril loop. Eregion HTTP scenarios are bench/eregion_http_bench.go and are not part of this number."
+    },
+    "hash_micro": {
+        "iterations": 100000,
+        "keyed_xxh128_ns": 368,
+        "hmac_sha256_ns": 1896,
+        "choice": "keyed xxh128 stays on the hot path; HMAC-SHA256 is recorded and not used per request"
+    },
+    "probe_micro": {
+        "iterations": 20000,
+        "ns_per_before_after": {
+            "scoped_container": 349,
+            "static_watchpoints": 1316,
+            "memory_trend": 1270
+        },
+        "note": "Direct probe calls, outside Worker. One clock pair around the whole loop."
+    },
+    "historical_compare_script": "php tests/Benchmark/worker_guard_compare.php 2000 5",
+    "notes": [
+        "none injects no guard. off injects NullWorkerGuard. They share the Worker loop.",
+        "observe_light is the reference light configuration: scoped probe, one request static, memory probe.",
+        "enforce_violation is reported separately and is not mixed into healthy throughput.",
+        "Targets of 2%, 3 microseconds and 5% are engineering goals, not a claim that this run met them."
+    ],
+    "comparison": {
+        "off_vs_none_throughput_drop_percent": 1.76,
+        "observe_light_vs_off_throughput_drop_percent": 58.11,
+        "observe_light_hook_ns_p50": 5374
+    },
+    "summary": {
+        "none": {
+            "rounds": 10,
+            "rps_min": 135553.4,
+            "rps_p50": 161847,
+            "rps_p95": 173967.7,
+            "rps_max": 175680.8,
+            "request_latency_ns_p95_median": 7400,
+            "hook_ns_per_request_p50": 0,
+            "hook_ns_per_request_min": 0,
+            "hook_ns_per_request_max": 0
+        },
+        "enforce_clean": {
+            "rounds": 10,
+            "rps_min": 67707.7,
+            "rps_p50": 73590.6,
+            "rps_p95": 81854.5,
+            "rps_max": 82295.2,
+            "request_latency_ns_p95_median": 22200,
+            "hook_ns_per_request_p50": 3803,
+            "hook_ns_per_request_min": 3619,
+            "hook_ns_per_request_max": 4413
+        },
+        "observe_empty": {
+            "rounds": 10,
+            "rps_min": 95391.4,
+            "rps_p50": 105922.1,
+            "rps_p95": 116344.5,
+            "rps_max": 117109.7,
+            "request_latency_ns_p95_median": 15100,
+            "hook_ns_per_request_p50": 818,
+            "hook_ns_per_request_min": 748,
+            "hook_ns_per_request_max": 933
+        },
+        "observe_light": {
+            "rounds": 10,
+            "rps_min": 56638.8,
+            "rps_p50": 66601.5,
+            "rps_p95": 71495.4,
+            "rps_max": 71723.8,
+            "request_latency_ns_p95_median": 26200,
+            "hook_ns_per_request_p50": 5374,
+            "hook_ns_per_request_min": 5125,
+            "hook_ns_per_request_max": 6527
+        },
+        "observe_sampled": {
+            "rounds": 10,
+            "rps_min": 55006.8,
+            "rps_p50": 66804.1,
+            "rps_p95": 76193,
+            "rps_max": 76637.9,
+            "request_latency_ns_p95_median": 24200,
+            "hook_ns_per_request_p50": 4724,
+            "hook_ns_per_request_min": 4336,
+            "hook_ns_per_request_max": 6154
+        },
+        "off": {
+            "rounds": 10,
+            "rps_min": 141492,
+            "rps_p50": 158997.1,
+            "rps_p95": 173293.3,
+            "rps_max": 174577.6,
+            "request_latency_ns_p95_median": 6300,
+            "hook_ns_per_request_p50": 0,
+            "hook_ns_per_request_min": 0,
+            "hook_ns_per_request_max": 0
+        }
+    },
+    "enforce_violation": {
+        "label": "enforce_violation",
+        "requests": 200,
+        "elapsed_ns": 4750300,
+        "rps": 42102.6,
+        "latency_ns": {
+            "p50": 4638500,
+            "p95": 4638500,
+            "p99": 4638500
+        },
+        "cpu_ns": 0,
+        "php_alloc_delta": 18824,
+        "php_real_delta": 0,
+        "php_real": 29360128,
+        "hook_duration_ns": 4572000,
+        "hook_ns_per_request": 22860,
+        "probe_ok": 4,
+        "probe_error": 0,
+        "probe_duration_ns": []
+    },
+    "rounds_raw": {
+        "none": [
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 574819500,
+                "rps": 173967.7,
+                "latency_ns": {
+                    "p50": 5000,
+                    "p95": 6200,
+                    "p99": 20200
+                },
+                "cpu_ns": 578125000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 617867500,
+                "rps": 161847,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 9000,
+                    "p99": 20000
+                },
+                "cpu_ns": 625000000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 569214300,
+                "rps": 175680.8,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 5200,
+                    "p99": 19800
+                },
+                "cpu_ns": 562500000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 620782000,
+                "rps": 161087.1,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 7400,
+                    "p99": 19900
+                },
+                "cpu_ns": 625000000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 688294800,
+                "rps": 145286.6,
+                "latency_ns": {
+                    "p50": 6100,
+                    "p95": 12300,
+                    "p99": 19500
+                },
+                "cpu_ns": 687500000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 648331900,
+                "rps": 154242,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 12300,
+                    "p99": 20100
+                },
+                "cpu_ns": 656250000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 737716400,
+                "rps": 135553.4,
+                "latency_ns": {
+                    "p50": 6200,
+                    "p95": 12500,
+                    "p99": 24100
+                },
+                "cpu_ns": 718750000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 583892600,
+                "rps": 171264.4,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 7100,
+                    "p99": 19000
+                },
+                "cpu_ns": 593750000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 602370400,
+                "rps": 166010.8,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 8900,
+                    "p99": 15800
+                },
+                "cpu_ns": 609375000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "none",
+                "requests": 100000,
+                "elapsed_ns": 575568200,
+                "rps": 173741.4,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 5300,
+                    "p99": 19500
+                },
+                "cpu_ns": 578125000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            }
+        ],
+        "enforce_clean": [
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1226842400,
+                "rps": 81510.1,
+                "latency_ns": {
+                    "p50": 11000,
+                    "p95": 22400,
+                    "p99": 28400
+                },
+                "cpu_ns": 1234375000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 365690000,
+                "hook_ns_per_request": 3657,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1388330600,
+                "rps": 72029,
+                "latency_ns": {
+                    "p50": 13000,
+                    "p95": 24600,
+                    "p99": 36100
+                },
+                "cpu_ns": 1390625000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 413295500,
+                "hook_ns_per_request": 4133,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1221679200,
+                "rps": 81854.5,
+                "latency_ns": {
+                    "p50": 10900,
+                    "p95": 24000,
+                    "p99": 29000
+                },
+                "cpu_ns": 1234375000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 362016000,
+                "hook_ns_per_request": 3620,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1397639300,
+                "rps": 71549.2,
+                "latency_ns": {
+                    "p50": 13300,
+                    "p95": 24400,
+                    "p99": 30900
+                },
+                "cpu_ns": 1390625000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 414253100,
+                "hook_ns_per_request": 4143,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1388092800,
+                "rps": 72041.3,
+                "latency_ns": {
+                    "p50": 13300,
+                    "p95": 21800,
+                    "p99": 32100
+                },
+                "cpu_ns": 1390625000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 412076700,
+                "hook_ns_per_request": 4121,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1237729400,
+                "rps": 80793.1,
+                "latency_ns": {
+                    "p50": 11000,
+                    "p95": 22200,
+                    "p99": 29400
+                },
+                "cpu_ns": 1234375000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 368964800,
+                "hook_ns_per_request": 3690,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1358869200,
+                "rps": 73590.6,
+                "latency_ns": {
+                    "p50": 13100,
+                    "p95": 21700,
+                    "p99": 30000
+                },
+                "cpu_ns": 1359375000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 404518600,
+                "hook_ns_per_request": 4045,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1280858100,
+                "rps": 78072.7,
+                "latency_ns": {
+                    "p50": 11200,
+                    "p95": 21600,
+                    "p99": 31000
+                },
+                "cpu_ns": 1281250000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 380281300,
+                "hook_ns_per_request": 3803,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1215137100,
+                "rps": 82295.2,
+                "latency_ns": {
+                    "p50": 10900,
+                    "p95": 21100,
+                    "p99": 27400
+                },
+                "cpu_ns": 1218750000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 361854700,
+                "hook_ns_per_request": 3619,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "enforce_clean",
+                "requests": 100000,
+                "elapsed_ns": 1476937600,
+                "rps": 67707.7,
+                "latency_ns": {
+                    "p50": 13300,
+                    "p95": 25600,
+                    "p99": 35500
+                },
+                "cpu_ns": 1468750000,
+                "php_alloc_delta": 4197456,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 441349800,
+                "hook_ns_per_request": 4413,
+                "probe_ok": 400000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            }
+        ],
+        "observe_empty": [
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 1048312100,
+                "rps": 95391.4,
+                "latency_ns": {
+                    "p50": 7800,
+                    "p95": 17500,
+                    "p99": 25200
+                },
+                "cpu_ns": 1046875000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 93260600,
+                "hook_ns_per_request": 933,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 921720000,
+                "rps": 108492.8,
+                "latency_ns": {
+                    "p50": 7800,
+                    "p95": 15100,
+                    "p99": 22900
+                },
+                "cpu_ns": 921875000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 81815200,
+                "hook_ns_per_request": 818,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 989588700,
+                "rps": 101052.1,
+                "latency_ns": {
+                    "p50": 9300,
+                    "p95": 11900,
+                    "p99": 22500
+                },
+                "cpu_ns": 1000000000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 87633700,
+                "hook_ns_per_request": 876,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 944089900,
+                "rps": 105922.1,
+                "latency_ns": {
+                    "p50": 7900,
+                    "p95": 16200,
+                    "p99": 23400
+                },
+                "cpu_ns": 937500000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 82384500,
+                "hook_ns_per_request": 824,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 853900300,
+                "rps": 117109.7,
+                "latency_ns": {
+                    "p50": 7600,
+                    "p95": 14900,
+                    "p99": 23200
+                },
+                "cpu_ns": 859375000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 74766900,
+                "hook_ns_per_request": 748,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 1007642000,
+                "rps": 99241.6,
+                "latency_ns": {
+                    "p50": 9300,
+                    "p95": 18500,
+                    "p99": 23800
+                },
+                "cpu_ns": 1000000000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 88272800,
+                "hook_ns_per_request": 883,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 915159800,
+                "rps": 109270.5,
+                "latency_ns": {
+                    "p50": 7700,
+                    "p95": 15700,
+                    "p99": 23200
+                },
+                "cpu_ns": 921875000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 80306700,
+                "hook_ns_per_request": 803,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 913737100,
+                "rps": 109440.7,
+                "latency_ns": {
+                    "p50": 7800,
+                    "p95": 12300,
+                    "p99": 23100
+                },
+                "cpu_ns": 906250000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 80019000,
+                "hook_ns_per_request": 800,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 944670100,
+                "rps": 105857.1,
+                "latency_ns": {
+                    "p50": 7700,
+                    "p95": 18400,
+                    "p99": 23700
+                },
+                "cpu_ns": 937500000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 83618900,
+                "hook_ns_per_request": 836,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_empty",
+                "requests": 100000,
+                "elapsed_ns": 859516600,
+                "rps": 116344.5,
+                "latency_ns": {
+                    "p50": 7600,
+                    "p95": 9600,
+                    "p99": 23000
+                },
+                "cpu_ns": 859375000,
+                "php_alloc_delta": 4196592,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 75392900,
+                "hook_ns_per_request": 754,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            }
+        ],
+        "observe_light": [
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1569918500,
+                "rps": 63697.6,
+                "latency_ns": {
+                    "p50": 15000,
+                    "p95": 24300,
+                    "p99": 34000
+                },
+                "cpu_ns": 1562500000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 581537300,
+                "hook_ns_per_request": 5815,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1615456700,
+                "rps": 61902,
+                "latency_ns": {
+                    "p50": 15000,
+                    "p95": 27600,
+                    "p99": 40200
+                },
+                "cpu_ns": 1593750000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 598226500,
+                "hook_ns_per_request": 5982,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1765572800,
+                "rps": 56638.8,
+                "latency_ns": {
+                    "p50": 15300,
+                    "p95": 29500,
+                    "p99": 42700
+                },
+                "cpu_ns": 1765625000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 652674800,
+                "hook_ns_per_request": 6527,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1426312600,
+                "rps": 70110.9,
+                "latency_ns": {
+                    "p50": 12800,
+                    "p95": 20300,
+                    "p99": 29900
+                },
+                "cpu_ns": 1437500000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 526619700,
+                "hook_ns_per_request": 5266,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1398691400,
+                "rps": 71495.4,
+                "latency_ns": {
+                    "p50": 12500,
+                    "p95": 26200,
+                    "p99": 34500
+                },
+                "cpu_ns": 1406250000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 515488300,
+                "hook_ns_per_request": 5155,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1424933400,
+                "rps": 70178.7,
+                "latency_ns": {
+                    "p50": 12600,
+                    "p95": 26600,
+                    "p99": 34400
+                },
+                "cpu_ns": 1421875000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 526774700,
+                "hook_ns_per_request": 5268,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1567464500,
+                "rps": 63797.3,
+                "latency_ns": {
+                    "p50": 13100,
+                    "p95": 26300,
+                    "p99": 36500
+                },
+                "cpu_ns": 1578125000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 576737500,
+                "hook_ns_per_request": 5767,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1394237500,
+                "rps": 71723.8,
+                "latency_ns": {
+                    "p50": 12600,
+                    "p95": 25100,
+                    "p99": 33000
+                },
+                "cpu_ns": 1390625000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 512528700,
+                "hook_ns_per_request": 5125,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1501466800,
+                "rps": 66601.5,
+                "latency_ns": {
+                    "p50": 12700,
+                    "p95": 26900,
+                    "p99": 35800
+                },
+                "cpu_ns": 1500000000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 554490500,
+                "hook_ns_per_request": 5545,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_light",
+                "requests": 100000,
+                "elapsed_ns": 1459773500,
+                "rps": 68503.8,
+                "latency_ns": {
+                    "p50": 12700,
+                    "p95": 21900,
+                    "p99": 34600
+                },
+                "cpu_ns": 1453125000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 537409600,
+                "hook_ns_per_request": 5374,
+                "probe_ok": 600000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            }
+        ],
+        "observe_sampled": [
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1419319000,
+                "rps": 70456.3,
+                "latency_ns": {
+                    "p50": 12000,
+                    "p95": 21500,
+                    "p99": 32400
+                },
+                "cpu_ns": 1421875000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 472389000,
+                "hook_ns_per_request": 4724,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1365561900,
+                "rps": 73229.9,
+                "latency_ns": {
+                    "p50": 11700,
+                    "p95": 21100,
+                    "p99": 29900
+                },
+                "cpu_ns": 1359375000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 454004700,
+                "hook_ns_per_request": 4540,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1304836900,
+                "rps": 76637.9,
+                "latency_ns": {
+                    "p50": 11600,
+                    "p95": 24200,
+                    "p99": 30400
+                },
+                "cpu_ns": 1312500000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 433576800,
+                "hook_ns_per_request": 4336,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1496913300,
+                "rps": 66804.1,
+                "latency_ns": {
+                    "p50": 13800,
+                    "p95": 25400,
+                    "p99": 35400
+                },
+                "cpu_ns": 1500000000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 498405700,
+                "hook_ns_per_request": 4984,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1603954200,
+                "rps": 62345.9,
+                "latency_ns": {
+                    "p50": 13900,
+                    "p95": 26000,
+                    "p99": 43600
+                },
+                "cpu_ns": 1593750000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 539141600,
+                "hook_ns_per_request": 5391,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1535135300,
+                "rps": 65140.8,
+                "latency_ns": {
+                    "p50": 13900,
+                    "p95": 27100,
+                    "p99": 35400
+                },
+                "cpu_ns": 1531250000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 512016000,
+                "hook_ns_per_request": 5120,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1313362700,
+                "rps": 76140.4,
+                "latency_ns": {
+                    "p50": 11700,
+                    "p95": 20300,
+                    "p99": 28800
+                },
+                "cpu_ns": 1312500000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 437243600,
+                "hook_ns_per_request": 4372,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1312456100,
+                "rps": 76193,
+                "latency_ns": {
+                    "p50": 11600,
+                    "p95": 23900,
+                    "p99": 31400
+                },
+                "cpu_ns": 1312500000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 434939600,
+                "hook_ns_per_request": 4349,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1547375700,
+                "rps": 64625.5,
+                "latency_ns": {
+                    "p50": 12500,
+                    "p95": 28900,
+                    "p99": 40000
+                },
+                "cpu_ns": 1546875000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 519154000,
+                "hook_ns_per_request": 5192,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "observe_sampled",
+                "requests": 100000,
+                "elapsed_ns": 1817957400,
+                "rps": 55006.8,
+                "latency_ns": {
+                    "p50": 14200,
+                    "p95": 31300,
+                    "p99": 45400
+                },
+                "cpu_ns": 1812500000,
+                "php_alloc_delta": 4197672,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 615372600,
+                "hook_ns_per_request": 6154,
+                "probe_ok": 420000,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            }
+        ],
+        "off": [
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 665389300,
+                "rps": 150288,
+                "latency_ns": {
+                    "p50": 6100,
+                    "p95": 9000,
+                    "p99": 16100
+                },
+                "cpu_ns": 671875000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 628942300,
+                "rps": 158997.1,
+                "latency_ns": {
+                    "p50": 6100,
+                    "p95": 6300,
+                    "p99": 18900
+                },
+                "cpu_ns": 625000000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 572811200,
+                "rps": 174577.6,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 5200,
+                    "p99": 19800
+                },
+                "cpu_ns": 562500000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 630037400,
+                "rps": 158720.7,
+                "latency_ns": {
+                    "p50": 5200,
+                    "p95": 8900,
+                    "p99": 19500
+                },
+                "cpu_ns": 625000000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 646160300,
+                "rps": 154760.4,
+                "latency_ns": {
+                    "p50": 6100,
+                    "p95": 6300,
+                    "p99": 16900
+                },
+                "cpu_ns": 640625000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 580183800,
+                "rps": 172359.2,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 5300,
+                    "p99": 19900
+                },
+                "cpu_ns": 578125000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 577056200,
+                "rps": 173293.3,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 6200,
+                    "p99": 20000
+                },
+                "cpu_ns": 578125000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 612239900,
+                "rps": 163334.7,
+                "latency_ns": {
+                    "p50": 5100,
+                    "p95": 8600,
+                    "p99": 19700
+                },
+                "cpu_ns": 609375000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 621574100,
+                "rps": 160881.9,
+                "latency_ns": {
+                    "p50": 5200,
+                    "p95": 6300,
+                    "p99": 14900
+                },
+                "cpu_ns": 609375000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            },
+            {
+                "label": "off",
+                "requests": 100000,
+                "elapsed_ns": 706753700,
+                "rps": 141492,
+                "latency_ns": {
+                    "p50": 6100,
+                    "p95": 10900,
+                    "p99": 20600
+                },
+                "cpu_ns": 703125000,
+                "php_alloc_delta": 4196216,
+                "php_real_delta": 4194304,
+                "php_real": 33554432,
+                "hook_duration_ns": 0,
+                "hook_ns_per_request": 0,
+                "probe_ok": 0,
+                "probe_error": 0,
+                "probe_duration_ns": []
+            }
+        ]
+    }
+}

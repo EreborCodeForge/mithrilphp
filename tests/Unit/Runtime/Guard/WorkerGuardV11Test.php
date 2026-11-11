@@ -20,6 +20,8 @@ use Erebor\Mithril\Runtime\Guard\GuardProbe;
 use Erebor\Mithril\Runtime\Guard\GuardVocabulary;
 use Erebor\Mithril\Runtime\Guard\NullWorkerGuard;
 use Erebor\Mithril\Runtime\Guard\Policy\GuardPolicy;
+use Erebor\Mithril\Runtime\Guard\Probe\ExplicitStaticStateProbe;
+use Erebor\Mithril\Runtime\Guard\Probe\ScopedContainerProbe;
 use Erebor\Mithril\Runtime\Guard\ProbeWorkerGuard;
 use Erebor\Mithril\Runtime\Guard\StaticWatchpoint;
 use Erebor\Mithril\Runtime\Guard\WorkerGuardFactory;
@@ -284,6 +286,110 @@ final class WorkerGuardV11Test extends TestCase
         $this->assertSame(400, $report->toArray()['summary']['cycles']);
     }
 
+    public function testWatchpointTransitionsKeepVerifiedObservedAndSalt(): void
+    {
+        $context = new GuardCycleContext(1, 1, GuardMode::Observe, 'c', 0);
+
+        V11ScalarWatch::$text = null;
+        $same = $this->scalarProbe();
+        $same->before($context);
+        $this->assertSame([], $same->after($context));
+        $this->assertMatchesRegularExpression('/^null:[0-9a-f]{32}$/', $this->baselineMark($same));
+
+        V11ScalarWatch::$text = null;
+        $toValue = $this->scalarProbe();
+        $toValue->before($context);
+        V11ScalarWatch::$text = 'alpha';
+        $verified = $toValue->after($context)[0];
+        $this->assertSame(FindingConfidence::Verified, $verified->confidence);
+        $this->assertSame(GuardVocabulary::SUMMARY_STATE, $verified->safeSummary);
+        $this->assertStringNotContainsString('alpha', json_encode($verified->toArray(), JSON_THROW_ON_ERROR));
+
+        V11ScalarWatch::$text = 'alpha';
+        $toNull = $this->scalarProbe();
+        $toNull->before($context);
+        V11ScalarWatch::$text = null;
+        $this->assertSame(FindingConfidence::Verified, $toNull->after($context)[0]->confidence);
+
+        V11ScalarWatch::$text = 'alpha';
+        $changed = $this->scalarProbe();
+        $changed->before($context);
+        V11ScalarWatch::$text = 'beta';
+        $changedFinding = $changed->after($context)[0];
+        $this->assertSame(FindingConfidence::Verified, $changedFinding->confidence);
+        $this->assertStringNotContainsString('beta', json_encode($changedFinding->toArray(), JSON_THROW_ON_ERROR));
+
+        V11ScalarWatch::$count = 1;
+        $numbers = new ExplicitStaticStateProbe([
+            new StaticWatchpoint(V11ScalarWatch::class, 'count', 'request'),
+        ]);
+        $numbers->prepare();
+        $numbers->before($context);
+        V11ScalarWatch::$count = 2;
+        $this->assertSame(FindingConfidence::Verified, $numbers->after($context)[0]->confidence);
+
+        V11ScalarWatch::$text = 'alpha';
+        $left = $this->scalarProbe();
+        $right = $this->scalarProbe();
+        $left->before($context);
+        $right->before($context);
+        $leftMark = $this->baselineMark($left);
+        $rightMark = $this->baselineMark($right);
+        $this->assertNotSame($leftMark, $rightMark);
+        $this->assertMatchesRegularExpression('/^string:[0-9a-f]{32}$/', $leftMark);
+        $this->assertStringNotContainsString('alpha', $leftMark);
+
+        V11NonScalar::$box = new \stdClass();
+        $objects = new ExplicitStaticStateProbe([
+            new StaticWatchpoint(V11NonScalar::class, 'box', 'request'),
+        ]);
+        $objects->prepare();
+        $objects->before($context);
+        V11NonScalar::$box = new \ArrayObject();
+        $observed = $objects->after($context)[0];
+        $this->assertSame(FindingConfidence::Observed, $observed->confidence);
+        $this->assertStringStartsWith('nonscalar:', $this->baselineMark($objects));
+    }
+
+    public function testSampleIntervalSkipsOnlyTheMemoryProbe(): void
+    {
+        $this->assertFalse((new ExplicitStaticStateProbe([]))->sampleable());
+        $this->assertFalse((new ScopedContainerProbe())->sampleable());
+
+        foreach ([GuardMode::Observe, GuardMode::Enforce] as $mode) {
+            $memory = new V11CountingProbe(true, 'memory_trend');
+            $scoped = new V11CountingProbe(false, 'scoped_container');
+            $static = new V11CountingProbe(false, 'static_watchpoints');
+            $guard = new ProbeWorkerGuard($mode, [$scoped, $static, $memory], new GuardPolicy(true), 8, 10);
+            $this->runRequests(new V11App(false, true), 20, $guard);
+
+            $this->assertSame(20, $scoped->runs, $mode->value);
+            $this->assertSame(20, $static->runs, $mode->value);
+            $this->assertSame(2, $memory->runs, $mode->value);
+        }
+    }
+
+    private function scalarProbe(): ExplicitStaticStateProbe
+    {
+        $probe = new ExplicitStaticStateProbe([
+            new StaticWatchpoint(V11ScalarWatch::class, 'text', 'request'),
+        ]);
+        $probe->prepare();
+
+        return $probe;
+    }
+
+    private function baselineMark(ExplicitStaticStateProbe $probe): string
+    {
+        $property = new \ReflectionProperty($probe, 'baseline');
+        $baseline = $property->getValue($probe);
+        $this->assertIsArray($baseline);
+        $mark = reset($baseline);
+        $this->assertIsString($mark);
+
+        return $mark;
+    }
+
     private function staticGuard(GuardMode $mode, bool $recycle): ProbeWorkerGuard
     {
         $config = new GuardConfig(
@@ -352,6 +458,13 @@ final class WorkerGuardV11Test extends TestCase
 final class V11NonScalar
 {
     public static object|null $box = null;
+}
+
+final class V11ScalarWatch
+{
+    public static ?string $text = null;
+
+    public static int $count = 0;
 }
 
 final class V11CountingProbe implements GuardProbe

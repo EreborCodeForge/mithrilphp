@@ -17,8 +17,14 @@ final class ProbeWorkerGuard implements WorkerGuard
 
     private bool $open = false;
 
-    /** @var array<string, bool> */
-    private array $beforeOk = [];
+    /**
+     * Parallel to $probes. Avoids allocating a map and calling id() on the clean path.
+     *
+     * @var list<bool>
+     */
+    private array $ran = [];
+
+    private readonly bool $runAll;
 
     /** @var list<GuardFinding> */
     private array $pendingErrors = [];
@@ -64,6 +70,8 @@ final class ProbeWorkerGuard implements WorkerGuard
     ) {
         $limit = max(0, $maxProbesPerCycle);
         $this->probes = array_slice(array_values($probes), 0, $limit);
+        $this->ran = array_fill(0, count($this->probes), false);
+        $this->runAll = $mode === GuardMode::Audit || $sampleEveryNRequests <= 1;
     }
 
     public function enabled(): bool
@@ -113,21 +121,23 @@ final class ProbeWorkerGuard implements WorkerGuard
             }
 
             $this->open = true;
-            $this->beforeOk = [];
             if ($this->probes === []) {
                 return;
             }
-            foreach ($this->probes as $probe) {
-                if (!$this->accepts($probe, $context->requestOrdinal)) {
+            $runAll = $this->runAll;
+            $ordinal = $context->requestOrdinal;
+            foreach ($this->probes as $i => $probe) {
+                if (!$runAll && !$this->accepts($probe, $ordinal)) {
+                    $this->ran[$i] = false;
                     continue;
                 }
                 try {
                     $probe->before($context);
-                    $this->beforeOk[$probe->id()] = true;
+                    $this->ran[$i] = true;
                     $this->probeOk++;
                     $this->probesExecuted++;
                 } catch (Throwable) {
-                    $this->beforeOk[$probe->id()] = false;
+                    $this->ran[$i] = false;
                     $this->probeErrors++;
                     $this->pendingErrors[] = GuardFinding::probeError($probe->id());
                 }
@@ -150,7 +160,6 @@ final class ProbeWorkerGuard implements WorkerGuard
 
             if ($context->collectionIncomplete || !$this->open) {
                 $this->open = false;
-                $this->beforeOk = [];
                 $findings[] = GuardFinding::incomplete();
                 $this->probeErrors++;
                 $decision = $this->decide($findings);
@@ -159,8 +168,8 @@ final class ProbeWorkerGuard implements WorkerGuard
                 return $decision;
             }
 
-            foreach ($this->probes as $probe) {
-                if (($this->beforeOk[$probe->id()] ?? false) !== true) {
+            foreach ($this->probes as $i => $probe) {
+                if ($this->ran[$i] !== true) {
                     continue;
                 }
                 try {
@@ -176,7 +185,6 @@ final class ProbeWorkerGuard implements WorkerGuard
             }
 
             $this->open = false;
-            $this->beforeOk = [];
             $decision = $this->decide($findings);
             $this->remember($decision, $context->requestOrdinal);
 

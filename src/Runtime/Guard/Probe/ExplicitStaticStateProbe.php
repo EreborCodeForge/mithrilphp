@@ -25,10 +25,21 @@ final class ExplicitStaticStateProbe implements GuardProbe
     /** @var array<int, ReflectionProperty> */
     private array $properties = [];
 
+    /**
+     * Request-lifetime indexes resolved in prepare(). The hot path does not rescan lifetimes.
+     *
+     * @var list<int>
+     */
+    private array $active = [];
+
     /** @var array<int, true> */
     private array $unavailable = [];
 
+    private bool $prepared = false;
+
     private bool $partial = false;
+
+    private ?string $nullFingerprint = null;
 
     /**
      * @param list<StaticWatchpoint> $watchpoints
@@ -51,10 +62,12 @@ final class ExplicitStaticStateProbe implements GuardProbe
 
     public function prepare(): void
     {
+        $active = [];
         foreach ($this->watchpoints as $index => $watchpoint) {
             if ($watchpoint->lifetime !== 'request') {
                 continue;
             }
+            $active[] = $index;
             try {
                 $this->properties[$index] = $this->resolve($watchpoint);
             } catch (\Throwable) {
@@ -62,6 +75,8 @@ final class ExplicitStaticStateProbe implements GuardProbe
                 $this->unavailable[$index] = true;
             }
         }
+        $this->active = $active;
+        $this->prepared = true;
     }
 
     public function before(GuardCycleContext $context): void
@@ -130,32 +145,48 @@ final class ExplicitStaticStateProbe implements GuardProbe
     private function fingerprints(): array
     {
         $out = [];
-        foreach ($this->watchpoints as $index => $watchpoint) {
-            if ($watchpoint->lifetime !== 'request') {
-                continue;
+        if (!$this->prepared) {
+            foreach ($this->watchpoints as $index => $watchpoint) {
+                if ($watchpoint->lifetime !== 'request') {
+                    continue;
+                }
+                $out[$index] = $this->readFingerprint($watchpoint, $index);
             }
-            if (isset($this->unavailable[$index])) {
-                $out[$index] = 'unavailable';
-                continue;
-            }
-            $out[$index] = $this->fingerprint($watchpoint, $index);
+
+            return $out;
+        }
+
+        foreach ($this->active as $index) {
+            $out[$index] = $this->readFingerprint($this->watchpoints[$index], $index);
         }
 
         return $out;
     }
 
-    private function fingerprint(StaticWatchpoint $watchpoint, int $index): string
+    private function readFingerprint(StaticWatchpoint $watchpoint, int $index): string
     {
-        $property = $this->property($watchpoint, $index);
-        $value = $property->getValue();
+        if (isset($this->unavailable[$index])) {
+            return 'unavailable';
+        }
+
+        $value = $this->property($watchpoint, $index)->getValue();
+        if ($value === null) {
+            return $this->nullFingerprint();
+        }
+
         $type = get_debug_type($value);
-        if ($value === null || is_bool($value) || is_int($value) || is_float($value) || is_string($value)) {
+        if (is_bool($value) || is_int($value) || is_float($value) || is_string($value)) {
             return $type . ':' . hash('xxh128', $this->salt . '|' . $type . '|' . $this->canonical($value));
         }
 
         $this->partial = true;
 
         return 'nonscalar:' . $type;
+    }
+
+    private function nullFingerprint(): string
+    {
+        return $this->nullFingerprint ??= 'null:' . hash('xxh128', $this->salt . '|null|');
     }
 
     private function property(StaticWatchpoint $watchpoint, int $index): ReflectionProperty
