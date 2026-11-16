@@ -164,6 +164,25 @@ final class EregionBinaryContractTest extends TestCase
         }
     }
 
+    public function testVersionOutputMayAppendTheGoLine(): void
+    {
+        $binary = $this->placeFixture($this->dir . DIRECTORY_SEPARATOR . 'eregion-go' . (PHP_OS_FAMILY === 'Windows' ? '.exe' : ''), 'withgo');
+
+        $info = (new EregionBinaryVersionInspector())->inspect($binary);
+
+        $this->assertSame('0.4.2', $info['version']);
+        $this->assertSame('eregion/1', $info['protocol']);
+    }
+
+    public function testUnexpectedThirdVersionLineIsMalformed(): void
+    {
+        $binary = $this->placeFixture($this->dir . DIRECTORY_SEPARATOR . 'eregion-extra' . (PHP_OS_FAMILY === 'Windows' ? '.exe' : ''), 'extra');
+
+        $this->expectException(EregionBinaryException::class);
+        $this->expectExceptionMessage('malformed');
+        (new EregionBinaryVersionInspector())->inspect($binary);
+    }
+
     public function testVersionCoreStripsOnlyThePrefix(): void
     {
         $this->assertSame(0, EregionRelease::compareVersions('v0.4.2', '0.4.2'));

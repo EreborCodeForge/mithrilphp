@@ -21,7 +21,10 @@ final class EregionBinaryVersionInspector
     public function inspect(string $binary): array
     {
         $stdout = $this->runVersion($binary);
-        $lines = $this->significantLines($stdout);
+        $lines = array_values(array_filter(
+            $this->significantLines($stdout),
+            static fn (string $line): bool => preg_match('/^go\s+\S+/', $line) !== 1,
+        ));
         if (count($lines) !== 2) {
             throw new EregionBinaryException(
                 'Eregion version stdout is malformed (expected exactly "eregion <semver>" and "protocol eregion/1"): '
@@ -104,11 +107,12 @@ final class EregionBinaryVersionInspector
         $pid = is_int($status['pid'] ?? null) ? $status['pid'] : 0;
         $stdout = '';
         $stderr = '';
+        $open = [1 => $pipes[1], 2 => $pipes[2]];
         $deadline = microtime(true) + $this->timeoutSeconds;
         $selectTimedOut = false;
 
-        while (microtime(true) < $deadline) {
-            $read = [$pipes[1], $pipes[2]];
+        while ($open !== [] && microtime(true) < $deadline) {
+            $read = array_values($open);
             $write = null;
             $except = null;
             $left = max(0.0, $deadline - microtime(true));
@@ -119,26 +123,25 @@ final class EregionBinaryVersionInspector
                 $selectTimedOut = true;
                 break;
             }
-            $eof = false;
             foreach ($read as $pipe) {
                 $chunk = fread($pipe, 8192);
+                $index = array_search($pipe, $open, true);
                 if ($chunk === false || $chunk === '') {
-                    $eof = true;
+                    if ($index !== false) {
+                        unset($open[$index]);
+                    }
                     continue;
                 }
-                if ($pipe === $pipes[1]) {
+                if ($index === 1) {
                     $stdout .= $chunk;
                 } else {
                     $stderr .= $chunk;
                 }
             }
-            if ($eof || $stdout !== '' || $stderr !== '') {
-                break;
-            }
         }
 
         $timedOut = $selectTimedOut && $stdout === '' && $stderr === '';
-        if ($timedOut) {
+        if ($timedOut || $open !== []) {
             $this->killProcess($process, $pid);
         }
         fclose($pipes[1]);

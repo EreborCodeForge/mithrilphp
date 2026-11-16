@@ -32,6 +32,14 @@ func main() {
 		fmt.Println("protocol eregion/9")
 	case "malformed":
 		fmt.Println("not-a-version")
+	case "withgo":
+		fmt.Println("eregion 0.4.2")
+		fmt.Println("protocol eregion/1")
+		fmt.Println("go go1.23.12 linux/amd64")
+	case "extra":
+		fmt.Println("eregion 0.4.2")
+		fmt.Println("protocol eregion/1")
+		fmt.Println("build dirty")
 	case "old":
 		fmt.Println("eregion 0.1.0")
 		fmt.Println("protocol eregion/1")

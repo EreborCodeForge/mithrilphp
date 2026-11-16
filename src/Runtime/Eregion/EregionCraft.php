@@ -103,10 +103,11 @@ server:
 
 workers:
   count: 4
-
-worker:
   max_requests: 1000
   memory_limit_mb: 256
+
+php:
+  worker_script: vendor/bin/eregion-worker
 
 socket:
   directory: var/runtime

@@ -169,6 +169,10 @@ final class Container
         }
 
         if ($this->compiled && $this->compiledStrict) {
+            if (class_exists($abstract)) {
+                return $this->resolve($abstract);
+            }
+
             throw new ContainerException("Service [$abstract] not in compiled container.");
         }
 

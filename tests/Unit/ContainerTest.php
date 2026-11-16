@@ -152,6 +152,16 @@ class ContainerTest extends TestCase
         $container->get('unknown');
     }
 
+    public function testCompiledStrictResolvesAConcreteClass(): void
+    {
+        $container = new Container();
+        $container->loadCompiled(factories: [], singletons: [], preloaded: [], strict: true);
+
+        $resolved = $container->get(\stdClass::class);
+
+        $this->assertInstanceOf(\stdClass::class, $resolved);
+    }
+
     public function testResetWorkerRestoresPreloadedAndClearsScoped()
     {
         $preloaded = new \stdClass();
