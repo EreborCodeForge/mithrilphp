@@ -111,6 +111,9 @@ worker:
 socket:
   directory: var/runtime
 
+metrics:
+  access: loopback
+
 YAML;
     }
 }

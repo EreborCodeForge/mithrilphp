@@ -103,7 +103,8 @@ final class JobWorker
         $recyclingPolicy = $this->resolveRecyclingPolicy($container);
         $observer = $this->resolveObserver($container);
 
-        $observer->onBoot();
+        $profiler = StageProfiler::fromEnvironment();
+        $profiler->measure('app.boot', fn () => $observer->onBoot());
         $this->installSignalHandlers();
 
         $transport = $this->activeTransport;
@@ -143,32 +144,42 @@ final class JobWorker
             $startedAt = microtime(true);
             $result = JobResult::ack();
 
-            $container->beginScope();
+            $profiler->measure('scope.begin', fn () => $container->beginScope());
             try {
                 try {
-                    $result = $this->app->handle($job);
+                    $result = $profiler->measure('handler', fn () => $this->app->handle($job));
                 } catch (Throwable $e) {
                     $result = JobResult::retry($e->getMessage() !== '' ? $e->getMessage() : $e::class);
                 }
-
-                $this->applyResult($transport, $observer, $job, $result);
             } finally {
                 try {
-                    $container->endScope();
+                    $profiler->measure('scope.end', fn () => $container->endScope());
                 } catch (Throwable) {
                     $scopeFailed = true;
                 }
             }
 
             $duration = microtime(true) - $startedAt;
-            $observer->onJobFinished($job, $result, $duration);
-            $served++;
 
             if ($scopeFailed) {
+                $observer->onJobFinished($job, $result, $duration);
+                $served++;
                 $this->state = JobWorkerState::Failed;
 
                 return new WorkerResult($served, WorkerStopReason::ScopeCleanupFailure, 'scope_cleanup_failure');
             }
+
+            try {
+                $this->applyResult($transport, $observer, $job, $result);
+            } catch (Throwable) {
+                $observer->onJobFinished($job, $result, $duration);
+                $this->state = JobWorkerState::Failed;
+
+                return new WorkerResult($served, WorkerStopReason::TransportFailure, 'ack_failed');
+            }
+
+            $observer->onJobFinished($job, $result, $duration);
+            $served++;
 
             $memory = memory_get_usage(true);
             $peak = memory_get_peak_usage(true);

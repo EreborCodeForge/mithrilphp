@@ -4,27 +4,49 @@ declare(strict_types=1);
 
 namespace Erebor\Mithril\Runtime\Eregion;
 
+use Erebor\Mithril\Runtime\Eregion\Exceptions\EregionBinaryException;
+
 /**
- * Resolves the Eregion binary path (env, PATH, or .mithril/bin).
+ * Resolves one Eregion executable.
+ *
+ * Precedence: EREGION_BINARY, then .mithril/bin/eregion, then PATH.
+ * An explicit override that is not executable fails with no fallback.
  */
 final class EregionBinaryResolver
 {
     public function resolve(?string $workingDirectory = null): ?string
     {
-        $env = getenv('EREGION_BINARY');
-        if (is_string($env) && $env !== '' && $this->isExecutable($env)) {
-            return $env;
-        }
+        $located = $this->locate($workingDirectory);
 
-        $fromPath = $this->findInPath('eregion');
-        if ($fromPath !== null) {
-            return $fromPath;
+        return $located['path'] ?? null;
+    }
+
+    /**
+     * @return array{path: string, origin: 'environment'|'project'|'path'}|null
+     */
+    public function locate(?string $workingDirectory = null): ?array
+    {
+        $env = getenv('EREGION_BINARY');
+        if (is_string($env) && $env !== '') {
+            if (!$this->isExecutable($env)) {
+                throw new EregionBinaryException(
+                    'EREGION_BINARY is set but is not an executable file: ' . $env
+                    . '. Fix that path or unset EREGION_BINARY; no other binary will be used.'
+                );
+            }
+
+            return ['path' => $env, 'origin' => 'environment'];
         }
 
         $cwd = $workingDirectory ?? getcwd() ?: '.';
         $local = $this->localInstallPath($cwd);
         if ($this->isExecutable($local)) {
-            return $local;
+            return ['path' => $local, 'origin' => 'project'];
+        }
+
+        $fromPath = $this->findInPath('eregion');
+        if ($fromPath !== null) {
+            return ['path' => $fromPath, 'origin' => 'path'];
         }
 
         return null;

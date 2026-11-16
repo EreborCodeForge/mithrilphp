@@ -31,21 +31,12 @@ final class ServerInstallCommand extends Command
         $cwd = getcwd() ?: '.';
 
         $resolver = new EregionBinaryResolver();
-        $existing = $resolver->resolve($cwd);
-
-        if ($existing !== null && !$force) {
-            // Prefer reporting local install path semantics when already present anywhere
-            $this->info('Eregion binary already available: ' . $existing);
-            $this->line('Use --force to re-download the pinned release into .mithril/bin.');
-            $this->line('Pinned version: ' . EregionRelease::resolveVersion($cwd, $version));
-            return 0;
-        }
 
         try {
             $result = (new EregionInstaller($resolver))->install(
                 workingDirectory: $cwd,
                 version: $version,
-                force: true,
+                force: $force,
             );
         } catch (ProtocolException $e) {
             $this->error($e->getMessage());

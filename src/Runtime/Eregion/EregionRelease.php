@@ -69,6 +69,24 @@ final class EregionRelease
         return str_starts_with($version, 'v') ? $version : 'v' . $version;
     }
 
+    /**
+     * Compare release numbers. A leading v/V is ignored and is not part of the numeric version.
+     */
+    public static function compareVersions(string $left, string $right): int
+    {
+        return version_compare(self::versionCore($left), self::versionCore($right));
+    }
+
+    public static function versionCore(string $version): string
+    {
+        $version = trim($version);
+        if ($version !== '' && ($version[0] === 'v' || $version[0] === 'V')) {
+            return substr($version, 1);
+        }
+
+        return $version;
+    }
+
     public static function assetName(?string $osFamily = null, ?string $machine = null): string
     {
         $os = strtolower($osFamily ?? PHP_OS_FAMILY);

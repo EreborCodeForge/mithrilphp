@@ -136,7 +136,7 @@ Lado MithrilPHP (quando `server:install` deixar de ser stub):
 | Versão pinada | `extra.mithril.eregion` = `v0.1.0` (hoje) ou `EREGION_VERSION` / `--version` |
 | URL do asset | `https://github.com/<org>/<repo>/releases/download/vX.Y.Z/eregion-<os>-<arch>` |
 | Destino local | `.mithril/bin/eregion` (`.exe` no Windows) |
-| Overrides | `EREGION_BINARY`, depois `PATH`, depois `.mithril/bin/` |
+| Overrides | `EREGION_BINARY`, depois `.mithril/bin/`, depois `PATH` só se não houver binário local |
 
 Comando:
 
@@ -148,10 +148,10 @@ vendor/bin/forge server:install --version=v0.1.0
 
 Ordem de resolução (já alinhada à lib):
 
-1. `EREGION_BINARY`
-2. `eregion` no `PATH`
-3. `.mithril/bin/eregion`
-4. download via `server:install`
+1. `EREGION_BINARY` (se estiver definido e não for executável, a resolução falha; não há fallback)
+2. `.mithril/bin/eregion`
+3. `eregion` no `PATH`, somente quando não houver binário local
+4. download via `server:install`, que só aceita um binário já presente depois de `eregion version` bater com o pin e com `protocol eregion/1`
 
 ---
 

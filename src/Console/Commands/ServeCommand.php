@@ -9,6 +9,7 @@ use Erebor\Mithril\Console\Command;
 use Erebor\Mithril\Environment;
 use Erebor\Mithril\Runtime\Eregion\ApplicationResolver;
 use Erebor\Mithril\Runtime\Eregion\EregionBinaryResolver;
+use Erebor\Mithril\Runtime\Eregion\Exceptions\EregionBinaryException;
 use Erebor\Mithril\Runtime\Eregion\Exceptions\ProtocolException;
 use Erebor\Mithril\Runtime\Eregion\ServerHealthCheck;
 
@@ -56,7 +57,12 @@ final class ServeCommand extends Command
             $manifestPath = $resolver->manifestPath();
             $manifest->write($manifestPath);
 
-            $binary = $binaryResolver->resolve($cwd);
+            try {
+                $binary = $binaryResolver->resolve($cwd);
+            } catch (EregionBinaryException $e) {
+                $this->error($e->getMessage());
+                return 1;
+            }
             if ($binary === null) {
                 $this->error('Eregion binary not found. Set EREGION_BINARY or run forge server:install.');
                 return 1;

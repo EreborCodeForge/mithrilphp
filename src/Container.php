@@ -7,6 +7,7 @@ namespace Erebor\Mithril;
 use Erebor\Mithril\Exceptions\ContainerException;
 use ReflectionClass;
 use ReflectionNamedType;
+use Throwable;
 
 final class Container
 {
@@ -244,12 +245,25 @@ final class Container
 
     public function endScope(): void
     {
-        foreach ($this->scopedInstances as $obj) {
-            if (method_exists($obj, 'cleanup')) {
-                $obj->cleanup();
+        $primary = null;
+        try {
+            foreach ($this->scopedInstances as $obj) {
+                if (!method_exists($obj, 'cleanup')) {
+                    continue;
+                }
+                try {
+                    $obj->cleanup();
+                } catch (Throwable $e) {
+                    $primary ??= $e;
+                }
             }
+        } finally {
+            $this->scopedInstances = [];
         }
-        $this->scopedInstances = [];
+
+        if ($primary !== null) {
+            throw $primary;
+        }
     }
 
     /**

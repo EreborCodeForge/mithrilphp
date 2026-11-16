@@ -12,6 +12,7 @@ final class EregionInstaller
     public function __construct(
         private readonly EregionBinaryResolver $resolver = new EregionBinaryResolver(),
         private readonly ?\Closure $downloader = null,
+        private readonly ?EregionBinaryVersionInspector $inspector = null,
     ) {}
 
     /**
@@ -28,10 +29,22 @@ final class EregionInstaller
         $asset = EregionRelease::assetName();
         $target = $this->resolver->localInstallPath($workingDirectory);
 
-        if (!$force && $this->resolver->isExecutable($target)) {
+        try {
+            $located = $this->resolver->locate($workingDirectory);
+        } catch (Exceptions\EregionBinaryException $e) {
+            throw new Exceptions\ProtocolException($e->getMessage());
+        }
+
+        if (!$force && $located !== null) {
+            try {
+                $info = $this->inspector()->assertCompatible($located['path'], $version);
+            } catch (Exceptions\EregionBinaryException $e) {
+                throw new Exceptions\ProtocolException($e->getMessage());
+            }
+
             return [
-                'path' => $target,
-                'version' => $version,
+                'path' => $located['path'],
+                'version' => EregionRelease::normalizeVersion($info['version']),
                 'asset' => $asset,
                 'action' => 'exists',
             ];
@@ -120,6 +133,11 @@ final class EregionInstaller
         $map = $this->parseChecksums($checksumsRaw);
 
         return $map[$asset] ?? null;
+    }
+
+    private function inspector(): EregionBinaryVersionInspector
+    {
+        return $this->inspector ?? new EregionBinaryVersionInspector();
     }
 
     private function download(string $url): string

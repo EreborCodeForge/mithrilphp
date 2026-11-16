@@ -79,14 +79,34 @@ final class ServerHealthCheck
             $issues[] = ['level' => 'ok', 'message' => 'Runtime directory writable'];
         }
 
-        $binary = $this->binaryResolver->resolve($this->resolver->workingDirectory());
+        $root = $this->resolver->workingDirectory();
+        try {
+            $binary = $this->binaryResolver->resolve($root);
+        } catch (Exceptions\EregionBinaryException $e) {
+            $issues[] = ['level' => 'error', 'message' => $e->getMessage()];
+            $binary = null;
+        }
         if ($binary === null) {
-            $issues[] = [
-                'level' => $requireBinary ? 'error' : 'warning',
-                'message' => 'Eregion binary not found (EREGION_BINARY, PATH, or .mithril/bin/eregion)',
-            ];
+            if (!isset($issues[array_key_last($issues)]) || !str_contains((string) ($issues[array_key_last($issues)]['message'] ?? ''), 'EREGION_BINARY')) {
+                $issues[] = [
+                    'level' => $requireBinary ? 'error' : 'warning',
+                    'message' => 'Eregion binary not found (EREGION_BINARY, .mithril/bin/eregion, or PATH)',
+                ];
+            }
         } else {
-            $issues[] = ['level' => 'ok', 'message' => 'Eregion binary: ' . $binary];
+            try {
+                $required = EregionRelease::resolveVersion($root);
+                $info = (new EregionBinaryVersionInspector())->assertCompatible($binary, $required);
+                $issues[] = [
+                    'level' => 'ok',
+                    'message' => 'Eregion binary: ' . $binary
+                        . ' version ' . $info['version']
+                        . ' protocol ' . $info['protocol']
+                        . ' pin ' . $required,
+                ];
+            } catch (Exceptions\EregionBinaryException $e) {
+                $issues[] = ['level' => 'error', 'message' => $e->getMessage()];
+            }
         }
 
         $config = $this->resolver->eregionConfigPath();

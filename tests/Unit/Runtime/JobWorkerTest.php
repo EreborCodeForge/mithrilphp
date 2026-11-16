@@ -213,6 +213,30 @@ final class JobWorkerTest extends TestCase
         $this->assertSame('memory_limit', $result->recycleReason);
     }
 
+    public function testEco05CleanupFailureDoesNotAck(): void
+    {
+        $transport = new RecordingJobTransport([new JobEnvelope('1', 'a', null)]);
+        $app = new FakeJobAppWithBrokenScopeCleanup();
+
+        $result = (new JobWorker($app, $transport))->runResult();
+
+        $this->assertSame(WorkerStopReason::ScopeCleanupFailure, $result->stopReason);
+        $this->assertSame([], $transport->ackedIds);
+        $this->assertSame(0, $app->getContainer()->scopedInstanceCount());
+    }
+
+    public function testEco04AckFailureIsTransportFailure(): void
+    {
+        $transport = new ThrowingAckTransport([new JobEnvelope('1', 'a', null)]);
+        $app = new FakeJobApp(fn () => JobResult::ack());
+
+        $result = (new JobWorker($app, $transport))->runResult();
+
+        $this->assertSame(0, $result->requestsHandled);
+        $this->assertSame(WorkerStopReason::TransportFailure, $result->stopReason);
+        $this->assertSame(21, $result->exitCode()->value);
+    }
+
     public function testTransportFailureOnPoll(): void
     {
         $transport = new FailingPollTransport();
@@ -825,5 +849,39 @@ final class RecordingJobWorkerObserver implements JobWorkerObserver
     public function onRecycle(string $reason): void
     {
         $this->recycleReasons[] = $reason;
+    }
+}
+
+final class ThrowingAckTransport implements JobTransport
+{
+    /** @var list<JobEnvelope> */
+    private array $queue;
+
+    /** @param list<JobEnvelope> $jobs */
+    public function __construct(array $jobs)
+    {
+        $this->queue = array_values($jobs);
+    }
+
+    public function poll(): JobPollResult
+    {
+        if ($this->queue === []) {
+            return JobPollResult::stop();
+        }
+
+        return JobPollResult::job(array_shift($this->queue));
+    }
+
+    public function ack(JobEnvelope $job): void
+    {
+        throw new RuntimeException('ack failed');
+    }
+
+    public function retry(JobEnvelope $job, JobResult $result): void
+    {
+    }
+
+    public function reject(JobEnvelope $job, JobResult $result): void
+    {
     }
 }
