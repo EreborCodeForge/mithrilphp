@@ -115,13 +115,24 @@ final class EregionBridge implements WorkerMetadataAwareBridge
 
     public function close(): void
     {
+        if ($this->closed) {
+            return;
+        }
+        $this->closed = true;
+
         if ($this->connection instanceof \Socket) {
-            @socket_close($this->connection);
+            try {
+                @socket_close($this->connection);
+            } catch (\Throwable) {
+            }
             $this->connection = null;
         }
 
         if (isset($this->server)) {
-            @socket_close($this->server);
+            try {
+                @socket_close($this->server);
+            } catch (\Throwable) {
+            }
         }
 
         if (is_file($this->socketPath)) {
